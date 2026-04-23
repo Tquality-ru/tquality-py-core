@@ -5,9 +5,9 @@ from tquality_core.pages.base_form import BaseForm
 from tquality_core.services.logger import (
     Logger,
     LogLevel,
+    ScreencastProvider,
     ScreenshotProvider,
     set_logger_resolver,
-    set_screenshot_provider,
     step,
 )
 from tquality_core.utils.string_utils import StringUtils
@@ -19,9 +19,9 @@ __all__ = [
     "Locator",
     "Logger",
     "LogLevel",
+    "ScreencastProvider",
     "ScreenshotProvider",
     "StringUtils",
     "set_logger_resolver",
-    "set_screenshot_provider",
     "step",
 ]

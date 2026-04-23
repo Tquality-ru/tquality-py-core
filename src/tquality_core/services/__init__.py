@@ -1,17 +1,17 @@
 from tquality_core.services.logger import (
     Logger,
     LogLevel,
+    ScreencastProvider,
     ScreenshotProvider,
     set_logger_resolver,
-    set_screenshot_provider,
     step,
 )
 
 __all__ = [
     "Logger",
     "LogLevel",
+    "ScreencastProvider",
     "ScreenshotProvider",
     "set_logger_resolver",
-    "set_screenshot_provider",
     "step",
 ]
