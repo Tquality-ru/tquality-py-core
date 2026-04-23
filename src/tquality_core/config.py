@@ -28,13 +28,47 @@ def _find_project_root() -> Path | None:
     return None
 
 
+def _collect_config_chain(start: Path, stop: Path | None) -> list[Path]:
+    """Собрать `config.json` от start к stop (включительно).
+
+    Возвращает список путей, упорядоченный от самого специфичного (ближнего к
+    start) до самого общего (в stop). Пропускает директории без config.json.
+    Останавливается при достижении stop или корня файловой системы.
+    """
+    found: list[Path] = []
+    current = start.resolve()
+    stop_resolved = stop.resolve() if stop is not None else None
+
+    while True:
+        candidate = current / CONFIG_FILENAME
+        if candidate.exists():
+            found.append(candidate)
+        if stop_resolved is not None and current == stop_resolved:
+            break
+        if current.parent == current:
+            break
+        current = current.parent
+
+    return found
+
+
 class BaseConfig(BaseSettings):
     """Драйвер-независимая конфигурация.
 
     Наследуйтесь от этого класса для добавления полей, специфичных для
-    драйвера. Порядок разрешения настроек (аргументы конструктора > env vars >
-    .env > config.json подпроекта > config.json workspace > значения по
-    умолчанию) сохраняется автоматически.
+    драйвера.
+
+    ### Порядок разрешения настроек (от высшего приоритета к низшему)
+
+    1. Аргументы конструктора
+    2. Переменные окружения (префикс `TEST_`)
+    3. Файл `.env`
+    4. Цепочка `config.json` от текущей директории вверх до корня workspace.
+       Более специфичный (ближний к cwd) побеждает менее специфичный.
+       Например, при запуске из `tests/integration/critical/` приоритет:
+       `critical/config.json` > `integration/config.json` > `tests/config.json`
+       > `config.json` в корне workspace.
+    5. Значения по умолчанию.
     """
 
     model_config = SettingsConfigDict(
@@ -62,21 +96,15 @@ class BaseConfig(BaseSettings):
             init_settings, env_settings, dotenv_settings,
         ]
 
-        subproject_config = Path.cwd() / CONFIG_FILENAME
         project_root = _find_project_root()
-        project_config = project_root / CONFIG_FILENAME if project_root else None
+        config_chain = _collect_config_chain(Path.cwd(), project_root)
 
-        if subproject_config.exists():
+        # Цепочка упорядочена от специфичного к общему.
+        # pydantic-settings отдает приоритет источникам, идущим раньше,
+        # поэтому порядок сохраняется как есть.
+        for config_path in config_chain:
             sources.append(
-                JsonConfigSettingsSource(settings_cls, json_file=subproject_config)
-            )
-        if (
-            project_config is not None
-            and project_config.exists()
-            and project_config != subproject_config
-        ):
-            sources.append(
-                JsonConfigSettingsSource(settings_cls, json_file=project_config)
+                JsonConfigSettingsSource(settings_cls, json_file=config_path)
             )
 
         return tuple(sources)
