@@ -100,15 +100,45 @@ uv build
 
 ## Релиз
 
-Релиз триггерится git-тегом вида `vX.Y.Z`:
+Перед релизом обновите версию в `pyproject.toml` (поле `project.version`)
+и закоммитьте изменение. Затем создайте git-тег, совпадающий с версией:
 
 ```bash
+# 1. Обновите version в pyproject.toml (например, 0.2.0)
+# 2. Закоммитьте:
+git commit -am "[Core] Release v0.2.0"
+# 3. Поставьте тег:
 git tag -a v0.2.0 -m "v0.2.0"
-git push origin v0.2.0
+git push origin master --tags
 ```
 
-CI-джоб `mirror-to-github` зеркалирует весь репозиторий (все ветки и теги)
-в https://github.com/Tquality-ru/tquality-py-core.
+Push тега `vX.Y.Z` триггерит два CI-джоба в stage `release`:
+
+- **`publish`** - сборка и публикация пакета в GitLab Package Registry
+  (`https://git.tquality.ru/frameworks/python/tquality-py-core/-/packages`).
+  Проверяет, что версия в `pyproject.toml` совпадает с тегом - если нет,
+  джоб падает.
+- **`mirror-to-github`** - зеркалирует весь репозиторий (все ветки и теги)
+  в https://github.com/Tquality-ru/tquality-py-core.
+
+### Установка пакета из GitLab Package Registry
+
+```bash
+uv pip install tquality-py-core \
+  --index-url "https://gitlab-ci-token:${GITLAB_TOKEN}@git.tquality.ru/api/v4/projects/42/packages/pypi/simple"
+```
+
+Либо добавьте в `pyproject.toml` консьюмера:
+
+```toml
+[[tool.uv.index]]
+name = "tquality"
+url = "https://git.tquality.ru/api/v4/projects/42/packages/pypi/simple"
+explicit = true
+
+[tool.uv.sources]
+tquality-py-core = { index = "tquality" }
+```
 
 ### Настройка зеркалирования (однократно)
 
@@ -119,6 +149,9 @@ CI-джоб `mirror-to-github` зеркалирует весь репозито�
    - Value: токен с GitHub
    - Protected: yes (только для protected refs, включая теги `v*`)
    - Masked: yes
+
+Для публикации в Package Registry дополнительная настройка не нужна: джоб
+использует встроенный `CI_JOB_TOKEN`.
 
 ## Структура репозитория
 
