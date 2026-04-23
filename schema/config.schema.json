@@ -1,0 +1,29 @@
+{
+  "description": "Драйвер-независимая конфигурация.\n\nНаследуйтесь от этого класса для добавления полей, специфичных для\nдрайвера.\n\n### Порядок разрешения настроек (от высшего приоритета к низшему)\n\n1. Аргументы конструктора\n2. Переменные окружения (префикс `TEST_`)\n3. Файл `.env`\n4. Цепочка `config.json` от текущей директории вверх до корня workspace.\n   Более специфичный (ближний к cwd) побеждает менее специфичный.\n   Например, при запуске из `tests/integration/critical/` приоритет:\n   `critical/config.json` > `integration/config.json` > `tests/config.json`\n   > `config.json` в корне workspace.\n5. Значения по умолчанию.",
+  "properties": {
+    "base_url": {
+      "default": "http://localhost",
+      "title": "Base Url",
+      "type": "string"
+    },
+    "default_timeout": {
+      "default": 10.0,
+      "title": "Default Timeout",
+      "type": "number"
+    },
+    "log_dir": {
+      "default": "logs",
+      "title": "Log Dir",
+      "type": "string"
+    },
+    "highlight_elements": {
+      "default": false,
+      "title": "Highlight Elements",
+      "type": "boolean"
+    }
+  },
+  "title": "BaseConfig",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@master/schema/config.schema.json"
+}

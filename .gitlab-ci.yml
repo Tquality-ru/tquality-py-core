@@ -1,0 +1,126 @@
+stages:
+  - check
+  - release
+
+default:
+  image: python:3.12-slim
+  before_script:
+    # git нужен hatch-vcs для вычисления версии из тега при editable-install.
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends git
+    - pip install --quiet uv
+    - uv sync
+  cache:
+    key:
+      files:
+        - pyproject.toml
+    paths:
+      - .venv/
+      - ~/.cache/uv/
+
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+  # Полный клон: hatch-vcs требует доступ к тегам для вычисления версии.
+  GIT_DEPTH: 0
+
+mypy:
+  stage: check
+  script:
+    - uv run mypy
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+tests:
+  stage: check
+  script:
+    - uv run pytest -v --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+    paths:
+      - report.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+mirror-to-github:
+  stage: release
+  # alpine/git имеет ENTRYPOINT ["git"], из-за чего обычные shell-команды
+  # обертываются в git и падают. Пустой entrypoint восстанавливает sh.
+  image:
+    name: alpine/git:latest
+    entrypoint: [""]
+  before_script: []
+  cache: []
+  # GIT_STRATEGY: none - делаем свой bare-клон, иначе runner клонирует
+  # только ref тега и мы не увидим ветку master.
+  variables:
+    GIT_STRATEGY: none
+  # Публикуем на GitHub только master + сам тег: релизы выходят из master,
+  # feature-ветки и временные refs на зеркале не нужны. Тег обязан быть
+  # на master, иначе зеркало уедет рассинхронизированным.
+  script:
+    - test -n "$GITHUB_MIRROR_TOKEN" || { echo "GITHUB_MIRROR_TOKEN is not set"; exit 1; }
+    - git clone --bare "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" repo.git
+    - cd repo.git
+    - >
+      git merge-base --is-ancestor "refs/tags/${CI_COMMIT_TAG}" refs/heads/master || {
+        echo "Тег ${CI_COMMIT_TAG} не в истории master - зеркалирование пропущено";
+        exit 1;
+      }
+    - >
+      git push
+      "https://x-access-token:${GITHUB_MIRROR_TOKEN}@github.com/Tquality-ru/tquality-py-core.git"
+      "refs/heads/master:refs/heads/master"
+      "refs/tags/${CI_COMMIT_TAG}:refs/tags/${CI_COMMIT_TAG}"
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+
+# Публикация в GitLab Package Registry на git-теге vX.Y.Z.
+# Версия пакета берется из git-тега (hatch-vcs), поэтому десинхронизация
+# пакета и тега невозможна и отдельная проверка не нужна.
+publish:
+  stage: release
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends git
+    - pip install --quiet uv
+  cache: []
+  script:
+    - uv build
+    - >
+      uv publish
+      --publish-url "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
+      --username gitlab-ci-token
+      --password "$CI_JOB_TOKEN"
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 month
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
+
+# Публикация в публичный PyPI (https://pypi.org) на git-теге vX.Y.Z.
+# Требует переменную PYPI_API_TOKEN в настройках CI/CD (protected, masked).
+# Временно отключено: токен публичного PyPI еще не выпущен.
+# Раскомментируйте, когда PYPI_API_TOKEN будет добавлен в Settings -> CI/CD.
+#publish-pypi:
+#  stage: release
+#  before_script:
+#    - apt-get update -qq && apt-get install -y -qq --no-install-recommends git
+#    - pip install --quiet uv
+#  cache: []
+#  script:
+#    - test -n "$PYPI_API_TOKEN" || { echo "PYPI_API_TOKEN не задан"; exit 1; }
+#    - uv build
+#    - >
+#      uv publish
+#      --username __token__
+#      --password "$PYPI_API_TOKEN"
+#  artifacts:
+#    paths:
+#      - dist/
+#    expire_in: 1 month
+#  rules:
+#    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+/
