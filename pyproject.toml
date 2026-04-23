@@ -16,6 +16,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=1.11",
+    "pytest>=8.0",
 ]
 
 [build-system]
@@ -28,7 +29,7 @@ packages = ["src/tquality_core"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["src/tquality_core"]
+files = ["src/tquality_core", "tests"]
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true

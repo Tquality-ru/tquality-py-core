@@ -43,6 +43,14 @@ uv run mypy
 
 Ошибки типов блокируют merge в main.
 
+## Запуск тестов
+
+```bash
+uv run pytest -v
+```
+
+Тесты запускаются автоматически в CI на каждый MR.
+
 ## Сборка пакета
 
 ```bash
@@ -55,6 +63,7 @@ uv build
 
 ```
 tquality-py-core/
+├── .gitlab-ci.yml          # CI: mypy + pytest на MR и main
 ├── pyproject.toml          # конфиг проекта, mypy, зависимости
 ├── scripts/
 │   └── install-hooks.sh    # установка git pre-commit хука
@@ -64,5 +73,6 @@ tquality-py-core/
 │   ├── pages/              # BaseForm
 │   ├── services/           # Logger, step, ScreenshotProvider
 │   └── utils/              # StringUtils
+├── tests/                  # pytest тесты
 └── README.md
 ```

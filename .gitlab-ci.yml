@@ -1,0 +1,41 @@
+stages:
+  - check
+
+default:
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet uv
+    - uv sync --frozen || uv sync
+  cache:
+    key:
+      files:
+        - uv.lock
+    paths:
+      - .venv/
+      - ~/.cache/uv/
+
+variables:
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.uv-cache"
+
+mypy:
+  stage: check
+  script:
+    - uv run mypy
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+tests:
+  stage: check
+  script:
+    - uv run pytest -v --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+    paths:
+      - report.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

@@ -52,6 +52,13 @@ uv pip install tquality-py-core
 См. [CONTRIBUTING.md](CONTRIBUTING.md) для инструкций по настройке окружения
 разработчика, установке git-хуков и проверке типов mypy.
 
+## CI/CD
+
+GitLab CI запускает две проверки на каждом MR и на main:
+
+- **mypy** - strict-режим проверки типов
+- **tests** - запуск pytest с JUnit-отчетом
+
 ## Зачем это существует
 
 Отделяет универсальные паттерны (логирование, page object'ы, загрузка
