@@ -1,7 +1,8 @@
-"""Base form / page object.
+"""Базовая форма / page object.
 
-A Page is a specific case of a Form (full-context form). Extend `BaseForm` for
-any addressable UI surface: main page, modal, header, sidebar, popup, etc.
+Page - частный случай Form (форма с полным контекстом). Наследуйте `BaseForm`
+для любой адресуемой UI-области: главной страницы, модального окна, шапки,
+боковой панели, попапа и т.д.
 """
 from __future__ import annotations
 
@@ -12,11 +13,12 @@ if TYPE_CHECKING:
 
 
 class BaseForm:
-    """Driver-agnostic base for page objects and forms.
+    """Драйвер-независимая база для page object'ов и форм.
 
-    Subclasses create elements in `__init__` and pass the `unique_element`
-    (truly unique to this form) to `super().__init__()`. Tests never touch
-    elements directly — they call form methods that describe business logic.
+    Подклассы создают элементы в `__init__` и передают `unique_element`
+    (действительно уникальный для этой формы) в `super().__init__()`. Тесты
+    никогда не обращаются к элементам напрямую - они вызывают методы формы,
+    описывающие бизнес-логику.
     """
 
     def __init__(self, unique_element: BaseElement, name: str = "") -> None:
@@ -35,6 +37,6 @@ class BaseForm:
     def is_displayed(self) -> bool:
         return self._unique_element.is_displayed
 
-    def wait_for_displayed(self, timeout: float | None = None) -> "BaseForm":
+    def wait_for_displayed(self, timeout: float | None = None) -> BaseForm:
         self._unique_element.wait_for_displayed(timeout)
         return self

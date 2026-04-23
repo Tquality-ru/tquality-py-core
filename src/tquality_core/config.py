@@ -1,12 +1,12 @@
-"""Base configuration for test automation projects.
+"""Базовая конфигурация для проектов автоматизации тестирования.
 
-Extend `BaseConfig` in your project to add driver-specific fields (browser type,
-window size, etc.). The core only defines fields that are universal across drivers.
+Расширяйте `BaseConfig` в своем проекте, чтобы добавить поля, специфичные
+для драйвера (тип браузера, размер окна и т.д.). Ядро определяет только
+поля, универсальные для всех драйверов.
 """
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Tuple, Type
 
 from pydantic_settings import (
     BaseSettings,
@@ -19,6 +19,7 @@ CONFIG_FILENAME = "config.json"
 
 
 def _find_project_root() -> Path | None:
+    """Найти корень workspace, поднимаясь по родительским директориям."""
     current = Path.cwd().resolve()
     for parent in (current, *current.parents):
         pyproject = parent / "pyproject.toml"
@@ -28,11 +29,12 @@ def _find_project_root() -> Path | None:
 
 
 class BaseConfig(BaseSettings):
-    """Driver-agnostic configuration.
+    """Драйвер-независимая конфигурация.
 
-    Subclass this to add driver-specific fields. The settings resolution order
-    (init args > env vars > .env > subproject config.json > workspace config.json >
-    defaults) is preserved automatically.
+    Наследуйтесь от этого класса для добавления полей, специфичных для
+    драйвера. Порядок разрешения настроек (аргументы конструктора > env vars >
+    .env > config.json подпроекта > config.json workspace > значения по
+    умолчанию) сохраняется автоматически.
     """
 
     model_config = SettingsConfigDict(
@@ -50,13 +52,15 @@ class BaseConfig(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls: Type[BaseSettings],
+        settings_cls: type[BaseSettings],
         init_settings: PydanticBaseSettingsSource,
         env_settings: PydanticBaseSettingsSource,
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
-    ) -> Tuple[PydanticBaseSettingsSource, ...]:
-        sources = [init_settings, env_settings, dotenv_settings]
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        sources: list[PydanticBaseSettingsSource] = [
+            init_settings, env_settings, dotenv_settings,
+        ]
 
         subproject_config = Path.cwd() / CONFIG_FILENAME
         project_root = _find_project_root()
@@ -66,7 +70,11 @@ class BaseConfig(BaseSettings):
             sources.append(
                 JsonConfigSettingsSource(settings_cls, json_file=subproject_config)
             )
-        if project_config and project_config.exists() and project_config != subproject_config:
+        if (
+            project_config is not None
+            and project_config.exists()
+            and project_config != subproject_config
+        ):
             sources.append(
                 JsonConfigSettingsSource(settings_cls, json_file=project_config)
             )

@@ -1,45 +1,60 @@
 # tquality-py-core
 
-Driver-agnostic core for tquality test automation. Provides the foundation
-that driver-specific packages (Selenium, Appium, WinAppDriver) build on.
+Драйвер-независимое ядро для автоматизации тестирования tquality. Предоставляет
+основу, на которой строятся пакеты, специфичные для драйверов (Selenium,
+Appium, WinAppDriver).
 
-## What's included
+## Что входит
 
-- **BaseConfig** — pydantic-settings-based configuration with JSON/env/dotenv
-  resolution. Subclass to add driver-specific fields.
-- **Logger, LogLevel, step** — per-test-context logging with allure integration.
-  CRITICAL steps attach screenshots via a pluggable provider.
-- **BaseForm** — base class for pages and forms (page = full-context form).
-- **BaseElement** — abstract interface that driver-specific elements implement.
-- **StringUtils** — common string parsing helpers.
+- **BaseConfig** - конфигурация на базе pydantic-settings с разрешением из
+  JSON/env/dotenv. Наследуйте для добавления полей, специфичных для драйвера.
+- **Logger, LogLevel, step** - логирование в контексте одного теста с
+  интеграцией allure. CRITICAL шаги прикрепляют скриншоты через подключаемый
+  провайдер.
+- **BaseForm** - базовый класс для страниц и форм (page = форма с полным
+  контекстом).
+- **BaseElement** - абстрактный интерфейс, который реализуют элементы,
+  специфичные для драйвера.
+- **StringUtils** - вспомогательные функции парсинга строк.
 
-## What's NOT included
+## Что НЕ входит
 
-- Concrete driver integration (Selenium, Appium, WinAppDriver) — those live in
-  separate packages and depend on this core.
-- Element types (Button, Input, Label, etc.) — driver-specific implementations
-  live alongside the driver integration.
-- DI container wiring — each consuming project builds its own container using
-  `dependency-injector`, registering core services and driver-specific services.
+- Конкретная интеграция с драйверами (Selenium, Appium, WinAppDriver) -
+  живет в отдельных пакетах, зависящих от этого ядра.
+- Типы элементов (Button, Input, Label и т.д.) - реализации, специфичные для
+  драйвера, живут рядом с интеграцией драйвера.
+- Настройка DI-контейнера - каждый использующий проект собирает свой
+  контейнер через `dependency-injector`, регистрируя сервисы ядра и
+  специфичные для драйвера сервисы.
 
-## Integration contract
+## Контракт интеграции
 
-Consuming packages must:
+Использующие пакеты должны:
 
-1. Subclass `BaseConfig` with driver-specific fields.
-2. Register a Logger resolver via `set_logger_resolver(lambda: Container.logger())`.
-3. Register a `ScreenshotProvider` via `set_screenshot_provider(MyDriverProvider())`
-   so CRITICAL steps can capture screenshots.
-4. Provide concrete `BaseElement` subclasses with find/wait logic.
+1. Наследовать `BaseConfig` с полями, специфичными для драйвера.
+2. Зарегистрировать резолвер Logger через `set_logger_resolver(lambda: Container.logger())`.
+3. Зарегистрировать `ScreenshotProvider` через `set_screenshot_provider(MyDriverProvider())`,
+   чтобы CRITICAL шаги могли делать скриншоты.
+4. Предоставить конкретные подклассы `BaseElement` с логикой поиска и ожидания.
 
-## Install
+## Требования
+
+- Python 3.12+
+
+## Установка
 
 ```
 uv pip install tquality-py-core
 ```
 
-## Why this exists
+## Разработка
 
-Keeps universal patterns (logging, page objects, config loading) separate from
-driver-specific code. Appium and WinAppDriver reuse the same page object model,
-step reporting, and configuration pipeline without pulling in Selenium.
+См. [CONTRIBUTING.md](CONTRIBUTING.md) для инструкций по настройке окружения
+разработчика, установке git-хуков и проверке типов mypy.
+
+## Зачем это существует
+
+Отделяет универсальные паттерны (логирование, page object'ы, загрузка
+конфигурации) от кода, специфичного для драйвера. Appium и WinAppDriver
+переиспользуют ту же модель page object'ов, отчетность по шагам и пайплайн
+конфигурации без необходимости тянуть Selenium.

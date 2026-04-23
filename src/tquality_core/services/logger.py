@@ -1,8 +1,8 @@
-"""Test logger with allure step integration.
+"""Логгер тестов с интеграцией в allure.
 
-Each test gets its own log file named by pytest node ID. The `step` decorator
-and context manager wrap actions with allure reporting. CRITICAL level steps
-capture a screenshot at the end (success or failure) via a pluggable hook.
+Каждый тест получает свой файл лога, именованный по pytest node ID. Декоратор
+и контекстный менеджер `step` оборачивают действия в allure-шаги. Шаги уровня
+CRITICAL делают скриншот в конце (успех или сбой) через подключаемый провайдер.
 """
 from __future__ import annotations
 
@@ -12,9 +12,11 @@ import hashlib
 import logging
 import os
 import re
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Optional, Protocol, TYPE_CHECKING
+from types import TracebackType
+from typing import Any, Protocol, TYPE_CHECKING
 
 import allure
 
@@ -26,44 +28,47 @@ _LOG_DATEFMT = "%H:%M:%S"
 
 
 class LogLevel(enum.Enum):
+    """Уровень важности шага. CRITICAL включает захват скриншота."""
+
     NORMAL = "normal"
     CRITICAL = "critical"
 
 
 class ScreenshotProvider(Protocol):
-    """Interface for driver-specific screenshot providers.
+    """Интерфейс для провайдеров скриншотов, специфичных для драйвера.
 
-    Implementations (Selenium, Appium, WinAppDriver) should register an instance
-    via `set_screenshot_provider`. CRITICAL steps call `capture()` to attach a
-    screenshot to the allure report.
+    Реализации (Selenium, Appium, WinAppDriver) должны зарегистрировать
+    экземпляр через `set_screenshot_provider`. CRITICAL шаги вызывают
+    `capture()` для прикрепления скриншота к allure-отчету.
     """
 
     def is_available(self) -> bool:
-        """Return True if a driver session is currently active."""
+        """Вернуть True, если сессия драйвера сейчас активна."""
         ...
 
     def capture(self) -> bytes:
-        """Return the current screen as PNG bytes."""
+        """Вернуть текущий экран как PNG-байты."""
         ...
 
 
-_screenshot_provider: Optional[ScreenshotProvider] = None
+_screenshot_provider: ScreenshotProvider | None = None
 
 
 def set_screenshot_provider(provider: ScreenshotProvider | None) -> None:
-    """Register a driver-specific screenshot provider.
+    """Зарегистрировать провайдер скриншотов, специфичный для драйвера.
 
-    Pass None to unregister (e.g., after driver teardown).
+    Передайте None для отмены регистрации (например, после остановки драйвера).
     """
     global _screenshot_provider
     _screenshot_provider = provider
 
 
 def _attach_screenshot(label: str) -> None:
+    """Попытаться прикрепить скриншот к allure-отчету. Ошибки проглатываются."""
     try:
         if _screenshot_provider is None or not _screenshot_provider.is_available():
             logging.getLogger(__name__).warning(
-                "Screenshot attempt without an active driver session"
+                "Попытка сделать скриншот без активной сессии драйвера"
             )
             return
         screenshot = _screenshot_provider.capture()
@@ -77,6 +82,8 @@ def _attach_screenshot(label: str) -> None:
 
 
 class _Step:
+    """Внутренняя реализация шага, используется как контекстный менеджер и декоратор."""
+
     def __init__(
         self, logger: Logger, title: str, level: LogLevel = LogLevel.NORMAL,
     ) -> None:
@@ -85,36 +92,44 @@ class _Step:
         self._level = level
         self._allure_step = allure.step(title)
 
-    def __enter__(self):
-        self._logger.info("Step: %s", self._title)
-        self._allure_step.__enter__()
+    def __enter__(self) -> _Step:
+        self._logger.info("Шаг: %s", self._title)
+        self._allure_step.__enter__()  # type: ignore[no-untyped-call]
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         try:
             if self._level == LogLevel.CRITICAL:
                 failed = exc_type is not None
                 label = (
-                    f"Screenshot [FAIL]: {self._title}"
+                    f"Скриншот [СБОЙ]: {self._title}"
                     if failed
-                    else f"Screenshot: {self._title}"
+                    else f"Скриншот: {self._title}"
                 )
                 _attach_screenshot(label)
         finally:
-            self._allure_step.__exit__(exc_type, exc_val, exc_tb)
-            status = "FAILED" if exc_type else "completed"
-            self._logger.info("Step %s: %s", status, self._title)
-        return False
+            self._allure_step.__exit__(exc_type, exc_val, exc_tb)  # type: ignore[no-untyped-call]
+            status = "СБОЙ" if exc_type else "завершен"
+            self._logger.info("Шаг %s: %s", status, self._title)
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             with self:
                 return func(*args, **kwargs)
         return wrapper
 
 
 def _get_test_node_id() -> str:
+    """Сформировать безопасное для файловой системы имя из pytest node ID.
+
+    ASCII-only, с MD5-хэшем для уникальности при не-ASCII параметрах.
+    """
     current = os.environ.get("PYTEST_CURRENT_TEST", "")
     if not current:
         return "unknown"
@@ -126,10 +141,11 @@ def _get_test_node_id() -> str:
 
 
 class Logger:
-    """Per-test-context logger with a dedicated file handler.
+    """Логгер на один контекст теста с отдельным файловым обработчиком.
 
-    Each instance creates a uniquely named log file from the current pytest node
-    ID. Use `step()` to wrap actions with allure and log markers.
+    Каждый экземпляр создает уникально именованный файл лога из текущего
+    pytest node ID. Используйте `step()` для обертывания действий в allure и
+    лог-маркеры.
     """
 
     def __init__(self, config: BaseConfig) -> None:
@@ -154,40 +170,41 @@ class Logger:
         stream_handler.setFormatter(formatter)
         self._logger.addHandler(stream_handler)
 
-        self._logger.info("Log started: %s", log_file)
+        self._logger.info("Лог запущен: %s", log_file)
 
-    def info(self, msg: str, *args) -> None:
+    def info(self, msg: str, *args: Any) -> None:
         self._logger.info(msg, *args)
 
-    def warning(self, msg: str, *args) -> None:
+    def warning(self, msg: str, *args: Any) -> None:
         self._logger.warning(msg, *args)
 
-    def error(self, msg: str, *args) -> None:
+    def error(self, msg: str, *args: Any) -> None:
         self._logger.error(msg, *args)
 
-    def debug(self, msg: str, *args) -> None:
+    def debug(self, msg: str, *args: Any) -> None:
         self._logger.debug(msg, *args)
 
     def step(self, title: str, level: LogLevel = LogLevel.NORMAL) -> _Step:
         return _Step(self, title, level=level)
 
 
-_logger_resolver: Optional[Callable[[], Logger]] = None
+_logger_resolver: Callable[[], Logger] | None = None
 
 
 def set_logger_resolver(resolver: Callable[[], Logger] | None) -> None:
-    """Register how to obtain the active Logger from anywhere.
+    """Зарегистрировать способ получения активного Logger из любого места.
 
-    Typically bound to a DI container provider (e.g., `Container.logger`).
+    Обычно связывается с провайдером DI-контейнера (например, `Container.logger`).
     """
     global _logger_resolver
     _logger_resolver = resolver
 
 
 def step(title: str, level: LogLevel = LogLevel.NORMAL) -> _Step:
-    """Module-level step factory that delegates to the registered Logger."""
+    """Фабрика шагов уровня модуля, делегирующая зарегистрированному Logger."""
     if _logger_resolver is None:
         raise RuntimeError(
-            "No logger resolver registered. Call set_logger_resolver() during setup."
+            "Резолвер логгера не зарегистрирован. "
+            "Вызовите set_logger_resolver() при настройке."
         )
     return _logger_resolver().step(title, level=level)
