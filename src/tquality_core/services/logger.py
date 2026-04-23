@@ -28,18 +28,25 @@ _LOG_DATEFMT = "%H:%M:%S"
 
 
 class LogLevel(enum.Enum):
-    """Уровень важности шага. CRITICAL включает захват скриншота."""
+    """Уровень важности шага.
+
+    - NORMAL: только лог + allure-шаг.
+    - CRITICAL: + скриншот в конце (успех или сбой).
+    - WITH_SCREENCAST: + запись экрана в виде GIF на время выполнения шага.
+      Требует зарегистрированного `ScreencastProvider` (обычно из selenium).
+    """
 
     NORMAL = "normal"
     CRITICAL = "critical"
+    WITH_SCREENCAST = "with-screencast"
 
 
 class ScreenshotProvider(Protocol):
-    """Интерфейс для провайдеров скриншотов, специфичных для драйвера.
+    """Интерфейс драйвер-специфичного провайдера скриншотов.
 
-    Реализации (Selenium, Appium, WinAppDriver) должны зарегистрировать
-    экземпляр через `set_screenshot_provider`. CRITICAL шаги вызывают
-    `capture()` для прикрепления скриншота к allure-отчету.
+    Регистрируется как DI-сервис (`providers.Singleton(...)`) в контейнере
+    и инжектится в `Logger.__init__`. CRITICAL-шаги вызывают `capture()` в
+    конце (успех или сбой) и прикрепляют PNG к allure-отчету.
     """
 
     def is_available(self) -> bool:
@@ -51,34 +58,29 @@ class ScreenshotProvider(Protocol):
         ...
 
 
-_screenshot_provider: ScreenshotProvider | None = None
+class ScreencastProvider(Protocol):
+    """Интерфейс провайдера screencast-записи.
 
-
-def set_screenshot_provider(provider: ScreenshotProvider | None) -> None:
-    """Зарегистрировать провайдер скриншотов, специфичный для драйвера.
-
-    Передайте None для отмены регистрации (например, после остановки драйвера).
+    Регистрируется как DI-сервис и инжектится в `Logger.__init__`.
+    Шаги уровня `WITH_SCREENCAST` вызывают `start()` на входе и `stop()`
+    на выходе; полученный бинарник (GIF/mp4) прикрепляется к allure-шагу.
     """
-    global _screenshot_provider
-    _screenshot_provider = provider
 
+    def is_available(self) -> bool:
+        """Вернуть True, если сессия драйвера сейчас активна."""
+        ...
 
-def _attach_screenshot(label: str) -> None:
-    """Попытаться прикрепить скриншот к allure-отчету. Ошибки проглатываются."""
-    try:
-        if _screenshot_provider is None or not _screenshot_provider.is_available():
-            logging.getLogger(__name__).warning(
-                "Попытка сделать скриншот без активной сессии драйвера"
-            )
-            return
-        screenshot = _screenshot_provider.capture()
-        allure.attach(
-            screenshot,
-            name=label,
-            attachment_type=allure.attachment_type.PNG,
-        )
-    except Exception:
-        pass
+    def start(self) -> None:
+        """Начать запись. Должен быть идемпотентным при повторном вызове."""
+        ...
+
+    def stop(self) -> bytes | None:
+        """Остановить запись и вернуть бинарник или None, если кадров нет."""
+        ...
+
+    def mime_type(self) -> str:
+        """MIME-тип результата `stop()` - например, 'image/gif' или 'video/mp4'."""
+        ...
 
 
 class _Step:
@@ -95,6 +97,24 @@ class _Step:
     def __enter__(self) -> _Step:
         self._logger.info("Шаг: %s", self._title)
         self._allure_step.__enter__()  # type: ignore[no-untyped-call]
+        if self._level == LogLevel.WITH_SCREENCAST:
+            provider = self._logger.screencast_provider
+            if provider is None:
+                self._logger.warning(
+                    "WITH_SCREENCAST: ScreencastProvider не зарегистрирован, пропускаю",
+                )
+            elif not provider.is_available():
+                self._logger.warning(
+                    "WITH_SCREENCAST: сессия драйвера неактивна, пропускаю",
+                )
+            else:
+                try:
+                    provider.start()
+                except Exception:  # noqa: BLE001
+                    self._logger.warning(
+                        "Не удалось начать screencast: %s",
+                        self._title,
+                    )
         return self
 
     def __exit__(
@@ -105,17 +125,59 @@ class _Step:
     ) -> None:
         try:
             if self._level == LogLevel.CRITICAL:
-                failed = exc_type is not None
-                label = (
-                    f"Скриншот [СБОЙ]: {self._title}"
-                    if failed
-                    else f"Скриншот: {self._title}"
-                )
-                _attach_screenshot(label)
+                self._attach_screenshot(failed=exc_type is not None)
+            elif self._level == LogLevel.WITH_SCREENCAST:
+                self._attach_screencast()
         finally:
             self._allure_step.__exit__(exc_type, exc_val, exc_tb)  # type: ignore[no-untyped-call]
             status = "СБОЙ" if exc_type else "завершен"
             self._logger.info("Шаг %s: %s", status, self._title)
+
+    def _attach_screenshot(self, *, failed: bool) -> None:
+        provider = self._logger.screenshot_provider
+        if provider is None:
+            self._logger.warning(
+                "CRITICAL: ScreenshotProvider не зарегистрирован, пропускаю",
+            )
+            return
+        if not provider.is_available():
+            self._logger.warning(
+                "CRITICAL: сессия драйвера неактивна, пропускаю скриншот",
+            )
+            return
+        label = (
+            f"Скриншот [СБОЙ]: {self._title}"
+            if failed else f"Скриншот: {self._title}"
+        )
+        try:
+            png = provider.capture()
+        except Exception:  # noqa: BLE001
+            self._logger.warning("Не удалось снять скриншот: %s", self._title)
+            return
+        allure.attach(png, name=label, attachment_type=allure.attachment_type.PNG)
+
+    def _attach_screencast(self) -> None:
+        provider = self._logger.screencast_provider
+        if provider is None:
+            self._logger.warning(
+                "WITH_SCREENCAST: ScreencastProvider не зарегистрирован, "
+                "пропускаю прикрепление записи",
+            )
+            return
+        try:
+            payload = provider.stop()
+        except Exception:  # noqa: BLE001
+            self._logger.warning(
+                "Не удалось остановить screencast: %s", self._title,
+            )
+            return
+        if not payload:
+            return
+        allure.attach(
+            payload,
+            name=f"Screencast: {self._title}",
+            extension=provider.mime_type().split("/")[-1],
+        )
 
     def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
@@ -143,12 +205,20 @@ def _get_test_node_id() -> str:
 class Logger:
     """Логгер на один контекст теста с отдельным файловым обработчиком.
 
-    Каждый экземпляр создает уникально именованный файл лога из текущего
-    pytest node ID. Используйте `step()` для обертывания действий в allure и
-    лог-маркеры.
+    Получает `screenshot_provider` и `screencast_provider` через DI -
+    шаги уровня CRITICAL и WITH_SCREENCAST используют их для
+    прикрепления артефактов к allure-отчету.
     """
 
-    def __init__(self, config: BaseConfig) -> None:
+    def __init__(
+        self,
+        config: BaseConfig,
+        screenshot_provider: ScreenshotProvider | None = None,
+        screencast_provider: ScreencastProvider | None = None,
+    ) -> None:
+        self.screenshot_provider = screenshot_provider
+        self.screencast_provider = screencast_provider
+
         self._started_at = datetime.now()
         timestamp = self._started_at.strftime("%Y%m%d_%H%M%S")
         node_id = _get_test_node_id()

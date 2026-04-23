@@ -33,8 +33,10 @@ Appium, WinAppDriver).
 
 1. Наследовать `BaseConfig` с полями, специфичными для драйвера.
 2. Зарегистрировать резолвер Logger через `set_logger_resolver(lambda: Container.logger())`.
-3. Зарегистрировать `ScreenshotProvider` через `set_screenshot_provider(MyDriverProvider())`,
-   чтобы CRITICAL шаги могли делать скриншоты.
+3. Опционально реализовать `ScreenshotProvider` / `ScreencastProvider`
+   и инжектить их в `Logger` через DI-контейнер, чтобы шаги уровня
+   `CRITICAL` прикрепляли скриншоты, а `WITH_SCREENCAST` - GIF-запись
+   экрана к allure-отчету. Без провайдеров шаги проходят с warning в лог.
 4. Предоставить конкретные подклассы `BaseElement` с логикой поиска и ожидания.
 
 ## Требования
