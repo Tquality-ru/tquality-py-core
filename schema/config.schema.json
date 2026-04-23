@@ -1,0 +1,29 @@
+{
+  "description": "Драйвер-независимая конфигурация.\n\nНаследуйтесь от этого класса для добавления полей, специфичных для\nдрайвера. Порядок разрешения настроек (аргументы конструктора > env vars >\n.env > config.json подпроекта > config.json workspace > значения по\nумолчанию) сохраняется автоматически.",
+  "properties": {
+    "base_url": {
+      "default": "http://localhost",
+      "title": "Base Url",
+      "type": "string"
+    },
+    "default_timeout": {
+      "default": 10.0,
+      "title": "Default Timeout",
+      "type": "number"
+    },
+    "log_dir": {
+      "default": "logs",
+      "title": "Log Dir",
+      "type": "string"
+    },
+    "highlight_elements": {
+      "default": false,
+      "title": "Highlight Elements",
+      "type": "boolean"
+    }
+  },
+  "title": "BaseConfig",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@main/schema/config.schema.json"
+}

@@ -12,3 +12,5 @@ build/
 logs/
 .pytest_cache/
 uv.lock
+.idea/
+.vscode/

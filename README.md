@@ -47,6 +47,31 @@ Appium, WinAppDriver).
 uv pip install tquality-py-core
 ```
 
+## CLI
+
+После установки доступна команда `tquality-config`:
+
+```bash
+tquality-config init        # сгенерировать config.json со значениями по умолчанию
+tquality-config schema      # сгенерировать schema/config.schema.json (для мейнтейнеров)
+```
+
+Сгенерированный `config.json` включает ссылку на JSON-схему, опубликованную
+через jsDelivr:
+
+```json
+{
+    "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@main/schema/config.schema.json",
+    "base_url": "http://localhost",
+    "default_timeout": 10.0,
+    "log_dir": "logs",
+    "highlight_elements": false
+}
+```
+
+Редакторы с поддержкой JSON Schema (VS Code, JetBrains IDE) автоматически
+подсказывают доступные поля и валидируют значения.
+
 ## Разработка
 
 См. [CONTRIBUTING.md](CONTRIBUTING.md) для инструкций по настройке окружения

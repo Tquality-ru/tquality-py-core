@@ -78,6 +78,18 @@ uv run pytest -v
 
 Тесты запускаются автоматически в CI на каждый MR.
 
+## Обновление JSON-схемы
+
+Схема `schema/config.schema.json` должна совпадать со схемой, генерируемой
+из `BaseConfig`. Если вы изменили поля `BaseConfig`, обновите схему:
+
+```bash
+uv run tquality-config schema
+```
+
+Коммит с изменением `BaseConfig` без обновления схемы провалит тест
+`test_committed_schema_matches_base_config` в CI.
+
 ## Сборка пакета
 
 ```bash
@@ -116,8 +128,12 @@ tquality-py-core/
 ├── pyproject.toml          # конфиг проекта, mypy, зависимости
 ├── scripts/
 │   └── install-hooks.sh    # установка git pre-commit хука
+├── schema/
+│   └── config.schema.json  # JSON-схема BaseConfig (публикуется через jsDelivr)
 ├── src/tquality_core/
+│   ├── cli.py              # CLI: tquality-config init / schema
 │   ├── config.py           # BaseConfig
+│   ├── schema.py           # генератор JSON-схемы
 │   ├── elements/           # BaseElement (ABC)
 │   ├── pages/              # BaseForm
 │   ├── services/           # Logger, step, ScreenshotProvider

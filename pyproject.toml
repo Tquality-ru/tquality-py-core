@@ -13,6 +13,9 @@ dependencies = [
     "allure-python-commons>=2.13",
 ]
 
+[project.scripts]
+tquality-config = "tquality_core.cli:main"
+
 [dependency-groups]
 dev = [
     "mypy>=1.11",
