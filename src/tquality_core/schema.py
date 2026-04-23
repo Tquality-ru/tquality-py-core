@@ -12,7 +12,7 @@ from typing import Any
 from tquality_core.config import BaseConfig
 
 SCHEMA_URL = (
-    "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@main"
+    "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@master"
     "/schema/config.schema.json"
 )
 

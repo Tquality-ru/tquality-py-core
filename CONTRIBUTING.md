@@ -68,7 +68,7 @@ uv sync
 uv run mypy
 ```
 
-Ошибки типов блокируют merge в main.
+Ошибки типов блокируют merge в master.
 
 ## Запуск тестов
 
@@ -124,7 +124,7 @@ CI-джоб `mirror-to-github` зеркалирует весь репозито�
 
 ```
 tquality-py-core/
-├── .gitlab-ci.yml          # CI: mypy + pytest на MR и main
+├── .gitlab-ci.yml          # CI: mypy + pytest на MR и master
 ├── pyproject.toml          # конфиг проекта, mypy, зависимости
 ├── scripts/
 │   └── install-hooks.sh    # установка git pre-commit хука

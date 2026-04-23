@@ -61,7 +61,7 @@ tquality-config schema      # сгенерировать schema/config.schema.js
 
 ```json
 {
-    "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@main/schema/config.schema.json",
+    "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@master/schema/config.schema.json",
     "base_url": "http://localhost",
     "default_timeout": 10.0,
     "log_dir": "logs",
@@ -79,7 +79,7 @@ tquality-config schema      # сгенерировать schema/config.schema.js
 
 ## CI/CD
 
-GitLab CI запускает две проверки на каждом MR и на main:
+GitLab CI запускает две проверки на каждом MR и на master:
 
 - **mypy** - strict-режим проверки типов
 - **tests** - запуск pytest с JUnit-отчетом
