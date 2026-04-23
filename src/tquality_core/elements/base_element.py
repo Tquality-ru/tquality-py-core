@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from tquality_core.elements.locator import Locator
+
 
 class BaseElement(ABC):
     """Интерфейс единичного UI-элемента, идентифицируемого локатором.
@@ -16,21 +18,16 @@ class BaseElement(ABC):
     своего драйвера.
     """
 
-    def __init__(self, by: object, locator: str, name: str = "") -> None:
-        self._by = by
+    def __init__(self, locator: Locator, name: str = "") -> None:
         self._locator = locator
-        self._name = name or f"{self.__class__.__name__}({by}={locator!r})"
+        self._name = name or f"{self.__class__.__name__}({locator})"
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def by(self) -> object:
-        return self._by
-
-    @property
-    def locator(self) -> str:
+    def locator(self) -> Locator:
         return self._locator
 
     @property

@@ -1,5 +1,6 @@
 from tquality_core.config import BaseConfig
 from tquality_core.elements.base_element import BaseElement
+from tquality_core.elements.locator import Locator
 from tquality_core.pages.base_form import BaseForm
 from tquality_core.services.logger import (
     Logger,
@@ -15,6 +16,7 @@ __all__ = [
     "BaseConfig",
     "BaseElement",
     "BaseForm",
+    "Locator",
     "Logger",
     "LogLevel",
     "ScreenshotProvider",
