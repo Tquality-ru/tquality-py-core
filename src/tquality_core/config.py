@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
     JsonConfigSettingsSource,
@@ -78,10 +79,37 @@ class BaseConfig(BaseSettings):
         extra="ignore",
     )
 
-    base_url: str = "http://localhost"
-    default_timeout: float = 10.0
-    log_dir: str = "logs"
-    highlight_elements: bool = False
+    base_url: str = Field(
+        default="http://localhost",
+        description=(
+            "Базовый URL тестируемого приложения. Абсолютный, со схемой "
+            "http или https."
+        ),
+        pattern=r"^https?://\S+$",
+    )
+    default_timeout: float = Field(
+        default=10.0,
+        description=(
+            "Таймаут по умолчанию для explicit wait операций с элементами "
+            "(сек). Должен быть положительным."
+        ),
+        gt=0,
+    )
+    log_dir: str = Field(
+        default="logs",
+        description=(
+            "Директория для файлов логов тестов (относительно корня проекта "
+            "или абсолютный путь). Создается автоматически если отсутствует."
+        ),
+        min_length=1,
+    )
+    highlight_elements: bool = Field(
+        default=False,
+        description=(
+            "Подсвечивать элемент красной рамкой на время взаимодействия. "
+            "Удобно при отладке и записи скринкастов."
+        ),
+    )
 
     @classmethod
     def settings_customise_sources(
