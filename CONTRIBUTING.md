@@ -59,6 +59,28 @@ uv build
 
 Артефакты появятся в `dist/`.
 
+## Релиз
+
+Релиз триггерится git-тегом вида `vX.Y.Z`:
+
+```bash
+git tag -a v0.2.0 -m "v0.2.0"
+git push origin v0.2.0
+```
+
+CI-джоб `mirror-to-github` зеркалирует весь репозиторий (все ветки и теги)
+в https://github.com/Tquality-ru/tquality-py-core.
+
+### Настройка зеркалирования (однократно)
+
+1. Создать GitHub Personal Access Token с правами `public_repo` (или `repo`
+   для приватных).
+2. В GitLab: **Settings → CI/CD → Variables** добавить переменную:
+   - Key: `GITHUB_MIRROR_TOKEN`
+   - Value: токен с GitHub
+   - Protected: yes (только для protected refs, включая теги `v*`)
+   - Masked: yes
+
 ## Структура репозитория
 
 ```

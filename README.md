@@ -59,6 +59,9 @@ GitLab CI запускает две проверки на каждом MR и н�
 - **mypy** - strict-режим проверки типов
 - **tests** - запуск pytest с JUnit-отчетом
 
+При публикации git-тега вида `vX.Y.Z` джоб `mirror-to-github` зеркалирует
+репозиторий в https://github.com/Tquality-ru/tquality-py-core.
+
 ## Зачем это существует
 
 Отделяет универсальные паттерны (логирование, page object'ы, загрузка
