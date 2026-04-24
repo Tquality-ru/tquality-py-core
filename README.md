@@ -7,10 +7,11 @@ Appium, WinAppDriver).
 ## Что входит
 
 - **BaseConfig** - конфигурация на базе pydantic-settings с разрешением из
-  JSON/env/dotenv. Наследуйте для добавления полей, специфичных для драйвера.
+  `config.json5` (с поддержкой комментариев и висячих запятых через json5) /
+  env / dotenv. Наследуйте для добавления полей, специфичных для драйвера.
 - **Logger, LogLevel, step** - логирование в контексте одного теста с
-  интеграцией allure. CRITICAL шаги прикрепляют скриншоты через подключаемый
-  провайдер.
+  интеграцией allure. Уровни шагов: `NORMAL`, `CRITICAL` (скриншот в конце)
+  и `WITH_SCREENCAST` (видеозапись шага через подключаемый провайдер).
 - **BaseForm** - базовый класс для страниц и форм (page = форма с полным
   контекстом).
 - **BaseElement** - абстрактный интерфейс, который реализуют элементы,
@@ -35,8 +36,9 @@ Appium, WinAppDriver).
 2. Зарегистрировать резолвер Logger через `set_logger_resolver(lambda: Container.logger())`.
 3. Опционально реализовать `ScreenshotProvider` / `ScreencastProvider`
    и инжектить их в `Logger` через DI-контейнер, чтобы шаги уровня
-   `CRITICAL` прикрепляли скриншоты, а `WITH_SCREENCAST` - GIF-запись
-   экрана к allure-отчету. Без провайдеров шаги проходят с warning в лог.
+   `CRITICAL` прикрепляли скриншоты, а `WITH_SCREENCAST` - видеозапись
+   (конкретный формат - за провайдером, например webm в selenium) к
+   allure-отчету. Без провайдеров шаги проходят с warning в лог.
 4. Предоставить конкретные подклассы `BaseElement` с логикой поиска и ожидания.
 
 ## Требования
@@ -59,20 +61,23 @@ tquality-config schema      # сгенерировать schema/config.schema.js
 ```
 
 Сгенерированный `config.json5` включает ссылку на JSON-схему, опубликованную
-через jsDelivr:
+через jsDelivr. URL автоматически привязан к версии пакета: на релизной
+установке `0.1.3` → `@v0.1.3`, на dev/editable (`+g...`, `.dev`) → `@master`:
 
-```json
+```jsonc
 {
-    "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@master/schema/config.schema.json",
+    "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@v0.1.3/schema/config.schema.json",
+    // Комментарии поддерживаются - можно пояснить выбор значения.
     "base_url": "http://localhost",
     "default_timeout": 10.0,
     "log_dir": "logs",
-    "highlight_elements": false
+    "highlight_elements": false,
 }
 ```
 
 Редакторы с поддержкой JSON Schema (VS Code, JetBrains IDE) автоматически
-подсказывают доступные поля и валидируют значения.
+подсказывают доступные поля и валидируют значения. Jsonc/json5 синтаксис
+позволяет оставлять `//` и `/* */` комментарии и висячие запятые.
 
 ## Разработка
 
@@ -86,8 +91,15 @@ GitLab CI запускает две проверки на каждом MR и н�
 - **mypy** - strict-режим проверки типов
 - **tests** - запуск pytest с JUnit-отчетом
 
-При публикации git-тега вида `vX.Y.Z` джоб `mirror-to-github` зеркалирует
-репозиторий в https://github.com/Tquality-ru/tquality-py-core.
+При публикации git-тега вида `vX.Y.Z`:
+
+- **`publish`** - сборка (версия берётся из тега через `hatch-vcs`) и
+  загрузка пакета в GitLab Package Registry.
+- **`mirror-to-github`** - пушит master и сам тег в
+  https://github.com/Tquality-ru/tquality-py-core (feature-ветки не
+  зеркалируются).
+
+История версий - в [CHANGELOG.md](CHANGELOG.md).
 
 ## Зачем это существует
 
