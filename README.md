@@ -33,7 +33,10 @@ Appium, WinAppDriver).
 Использующие пакеты должны:
 
 1. Наследовать `BaseConfig` с полями, специфичными для драйвера.
-2. Зарегистрировать резолвер Logger через `set_logger_resolver(lambda: Container.logger())`.
+2. Зарегистрировать резолвер Logger через
+   `set_logger_resolver(lambda: YourServices.logger())`, где `YourServices`
+   - ваш DI-контейнер. Это нужно, чтобы `step()` из ядра находил активный
+   Logger в любом модуле.
 3. Опционально реализовать `ScreenshotProvider` / `ScreencastProvider`
    и инжектить их в `Logger` через DI-контейнер, чтобы шаги уровня
    `CRITICAL` прикрепляли скриншоты, а `WITH_SCREENCAST` - видеозапись
@@ -47,8 +50,23 @@ Appium, WinAppDriver).
 
 ## Установка
 
+Пакет пока не на публичном PyPI. Устанавливается из публичного GitHub-зеркала
+по git-тегу:
+
+```bash
+uv pip install "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3"
 ```
-uv pip install tquality-py-core
+
+или в `pyproject.toml` потребителя:
+
+```toml
+dependencies = [
+    "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3",
+]
+
+# hatch требует явного разрешения direct-references.
+[tool.hatch.metadata]
+allow-direct-references = true
 ```
 
 ## CLI
