@@ -57,7 +57,7 @@ def test_resolves_from_workspace_root_when_cwd_has_no_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json", {"base_url": "https://root"})
+    _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
     sub = tmp_path / "tests"
     sub.mkdir()
     monkeypatch.chdir(sub)
@@ -71,12 +71,12 @@ def test_more_specific_config_wins_over_less_specific(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json", {
+    _write_config(tmp_path / "config.json5", {
         "base_url": "https://root",
         "default_timeout": 10.0,
     })
     sub = tmp_path / "tests" / "integration"
-    _write_config(sub / "config.json", {"base_url": "https://integration"})
+    _write_config(sub / "config.json5", {"base_url": "https://integration"})
     monkeypatch.chdir(sub)
 
     cfg = BaseConfig()
@@ -91,17 +91,17 @@ def test_three_level_chain_resolves_each_field_from_closest_config(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json", {
+    _write_config(tmp_path / "config.json5", {
         "base_url": "https://root",
         "default_timeout": 10.0,
         "log_dir": "root-logs",
     })
-    _write_config(tmp_path / "tests" / "config.json", {
+    _write_config(tmp_path / "tests" / "config.json5", {
         "default_timeout": 20.0,
         "log_dir": "tests-logs",
     })
     leaf = tmp_path / "tests" / "integration" / "critical"
-    _write_config(leaf / "config.json", {"log_dir": "critical-logs"})
+    _write_config(leaf / "config.json5", {"log_dir": "critical-logs"})
     monkeypatch.chdir(leaf)
 
     cfg = BaseConfig()
@@ -115,7 +115,7 @@ def test_env_vars_override_config_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json", {"base_url": "https://root"})
+    _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("TEST_BASE_URL", "https://from-env")
 
@@ -128,7 +128,7 @@ def test_constructor_args_override_everything(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json", {"base_url": "https://root"})
+    _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
     monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("TEST_BASE_URL", "https://from-env")
 
@@ -140,9 +140,9 @@ def test_constructor_args_override_everything(
 def test_jsonc_comments_and_trailing_commas_supported(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """config.json может содержать комментарии и висячие запятые (jsonc/json5)."""
+    """config.json5 может содержать комментарии и висячие запятые (jsonc/json5)."""
     _make_workspace(tmp_path)
-    (tmp_path / "config.json").write_text(
+    (tmp_path / "config.json5").write_text(
         """
         {
             // Главная причина выбора: тестовая окружающая среда.
@@ -164,15 +164,15 @@ def test_jsonc_comments_and_trailing_commas_supported(
 def test_chain_stops_at_workspace_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """config.json выше workspace root не должен читаться."""
+    """config.json5 выше workspace root не должен читаться."""
     outer = tmp_path / "outer"
     outer.mkdir()
-    _write_config(outer / "config.json", {"base_url": "https://should-not-be-read"})
+    _write_config(outer / "config.json5", {"base_url": "https://should-not-be-read"})
 
     workspace = outer / "workspace"
     workspace.mkdir()
     _make_workspace(workspace)
-    _write_config(workspace / "config.json", {"base_url": "https://workspace"})
+    _write_config(workspace / "config.json5", {"base_url": "https://workspace"})
 
     monkeypatch.chdir(workspace)
     cfg = BaseConfig()

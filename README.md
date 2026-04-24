@@ -54,11 +54,11 @@ uv pip install tquality-py-core
 После установки доступна команда `tquality-config`:
 
 ```bash
-tquality-config init        # сгенерировать config.json со значениями по умолчанию
+tquality-config init        # сгенерировать config.json5 со значениями по умолчанию
 tquality-config schema      # сгенерировать schema/config.schema.json (для мейнтейнеров)
 ```
 
-Сгенерированный `config.json` включает ссылку на JSON-схему, опубликованную
+Сгенерированный `config.json5` включает ссылку на JSON-схему, опубликованную
 через jsDelivr:
 
 ```json

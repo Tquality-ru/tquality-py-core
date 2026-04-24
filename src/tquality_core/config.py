@@ -36,7 +36,7 @@ class _JsoncConfigSettingsSource(JsonConfigSettingsSource):
             )
         return data
 
-CONFIG_FILENAME = "config.json"
+CONFIG_FILENAME = "config.json5"
 
 
 def _find_project_root() -> Path | None:
