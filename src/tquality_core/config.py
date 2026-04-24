@@ -7,7 +7,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
+import json5
 from pydantic import Field
 from pydantic_settings import (
     BaseSettings,
@@ -16,7 +18,25 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-CONFIG_FILENAME = "config.json"
+
+class _JsoncConfigSettingsSource(JsonConfigSettingsSource):
+    """Как `JsonConfigSettingsSource`, но парсит jsonc/json5.
+
+    Позволяет пользователю оставлять в `config.json` комментарии
+    (`//`, `/* */`) и висячие запятые - полезно, чтобы рядом с настройкой
+    описать, зачем она такая.
+    """
+
+    def _read_file(self, file_path: Path) -> dict[str, Any]:
+        with file_path.open(encoding=self.json_file_encoding) as f:
+            data = json5.load(f)
+        if not isinstance(data, dict):
+            raise ValueError(
+                f"{file_path}: ожидается JSON-объект на верхнем уровне",
+            )
+        return data
+
+CONFIG_FILENAME = "config.json5"
 
 
 def _find_project_root() -> Path | None:
@@ -132,7 +152,7 @@ class BaseConfig(BaseSettings):
         # поэтому порядок сохраняется как есть.
         for config_path in config_chain:
             sources.append(
-                JsonConfigSettingsSource(settings_cls, json_file=config_path)
+                _JsoncConfigSettingsSource(settings_cls, json_file=config_path)
             )
 
         return tuple(sources)
