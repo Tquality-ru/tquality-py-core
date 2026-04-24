@@ -137,6 +137,30 @@ def test_constructor_args_override_everything(
     assert cfg.base_url == "https://explicit"
 
 
+def test_jsonc_comments_and_trailing_commas_supported(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """config.json может содержать комментарии и висячие запятые (jsonc/json5)."""
+    _make_workspace(tmp_path)
+    (tmp_path / "config.json").write_text(
+        """
+        {
+            // Главная причина выбора: тестовая окружающая среда.
+            "base_url": "https://staging.example.com",
+            /* Таймаут увеличен, потому что БД на staging медленнее prod */
+            "default_timeout": 25.0,
+        }
+        """,
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    cfg = BaseConfig()
+
+    assert cfg.base_url == "https://staging.example.com"
+    assert cfg.default_timeout == 25.0
+
+
 def test_chain_stops_at_workspace_root(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
