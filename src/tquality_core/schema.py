@@ -1,20 +1,44 @@
 """Генерация JSON-схемы для конфигурации.
 
-Используется CLI-командой `tquality-config schema` для записи
-`schema/config.schema.json` в корень репозитория.
+`SCHEMA_URL` вычисляется по установленной версии пакета:
+
+- Релизная версия (например, `0.1.3`) → `@v0.1.3` - пин на тег.
+- Dev/editable сборка (версия содержит `+g...` или `.dev`) → `@master`.
+
+Это значит: `tquality-config init`, выполненный на релизной установке,
+запекает в config.json5 ссылку на конкретный тег. В dev-окружении -
+ссылка на master, чтобы отслеживать текущую разработку.
 """
 from __future__ import annotations
 
+import importlib.metadata
 import json
 from pathlib import Path
 from typing import Any
 
 from tquality_core.config import BaseConfig
 
-SCHEMA_URL = (
-    "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@master"
-    "/schema/config.schema.json"
-)
+_REPO_BASE = "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core"
+_SCHEMA_PATH = "schema/config.schema.json"
+_PACKAGE_NAME = "tquality-py-core"
+
+
+def _resolve_ref() -> str:
+    """Вернуть git-ref для URL схемы.
+
+    Чистый релиз ("0.1.3") → "v0.1.3". Dev ("0.1.3+g...", "0.0+g...",
+    "0.1.3.dev1") → "master". Пакет не установлен → "master".
+    """
+    try:
+        version = importlib.metadata.version(_PACKAGE_NAME)
+    except importlib.metadata.PackageNotFoundError:
+        return "master"
+    if "+" in version or ".dev" in version:
+        return "master"
+    return f"v{version}"
+
+
+SCHEMA_URL = f"{_REPO_BASE}@{_resolve_ref()}/{_SCHEMA_PATH}"
 
 
 def generate_schema(config_cls: type[BaseConfig] = BaseConfig) -> dict[str, Any]:
