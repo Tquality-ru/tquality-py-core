@@ -3,7 +3,7 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
-## [Unreleased]
+## [0.1.4] - 2026-05-05
 
 ### Добавлено
 
@@ -11,7 +11,7 @@
   `keywords`, `classifiers`, `project.urls`) приведены к виду,
   ожидаемому PyPI. Установка стала однострочной:
   `pip install tquality-py-core` / `uv add tquality-py-core`.
-- CI-джоб **`publish-pypi`** загружает пакет на https://pypi.org
+- CI-джоба **`publish-pypi`** загружает пакет на https://pypi.org
   на git-теге `vX.Y.Z`. Требует переменную `PYPI_TOKEN` в
   настройках CI/CD (protected, masked). GitLab Package Registry
   остаётся как внутреннее зеркало.
