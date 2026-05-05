@@ -2,10 +2,34 @@
 name = "tquality-py-core"
 dynamic = ["version"]
 description = "Driver-agnostic core for tquality test automation (Selenium, Appium, WinAppDriver, etc.)"
+readme = "README.md"
 requires-python = ">=3.12"
 authors = [{name = "ООО «Точка качества»"}]
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
+keywords = [
+    "testing",
+    "test-automation",
+    "qa",
+    "selenium",
+    "appium",
+    "winappdriver",
+    "page-object",
+    "allure",
+    "tquality",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
+]
 dependencies = [
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
@@ -15,6 +39,12 @@ dependencies = [
     # в config.json. Чистый Python.
     "json5>=0.9",
 ]
+
+[project.urls]
+Homepage = "https://github.com/Tquality-ru/tquality-py-core"
+Repository = "https://github.com/Tquality-ru/tquality-py-core"
+Issues = "https://github.com/Tquality-ru/tquality-py-core/issues"
+Changelog = "https://github.com/Tquality-ru/tquality-py-core/blob/master/CHANGELOG.md"
 
 [project.scripts]
 tquality-config = "tquality_core.cli:main"

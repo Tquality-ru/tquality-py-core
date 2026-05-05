@@ -52,21 +52,41 @@ Appium, WinAppDriver).
 
 ## Установка
 
-Пакет пока не на публичном PyPI. Устанавливается из публичного зеркала
-на GitHub по тегу git:
+Пакет публикуется в [публичный PyPI](https://pypi.org/project/tquality-py-core/).
+Это рекомендуемый способ установки для всех потребителей:
+
+```bash
+pip install tquality-py-core
+```
+
+или с использованием [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add tquality-py-core
+```
+
+В `pyproject.toml` потребителя:
+
+```toml
+dependencies = [
+    "tquality-py-core>=0.1.3",
+]
+```
+
+### Альтернатива: установка из GitHub-зеркала
+
+Если нужна сборка из исходников (например, для проверки коммита,
+ещё не вышедшего в релиз), пакет также доступен из публичного
+GitHub-зеркала по тегу:
 
 ```bash
 uv pip install "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3"
 ```
 
-или в `pyproject.toml` потребителя:
+В этом случае hatch у потребителя требует явного разрешения
+`direct-references`:
 
 ```toml
-dependencies = [
-    "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3",
-]
-
-# hatch требует явного разрешения direct-references.
 [tool.hatch.metadata]
 allow-direct-references = true
 ```
@@ -114,8 +134,12 @@ GitLab CI запускает две проверки на каждом MR и н�
 
 При публикации тега git вида `vX.Y.Z`:
 
-- **`publish`** - сборка (версия берётся из тега через `hatch-vcs`) и
-  загрузка пакета в GitLab Package Registry.
+- **`publish-pypi`** - сборка (версия берётся из тега через `hatch-vcs`)
+  и загрузка пакета в публичный
+  [PyPI](https://pypi.org/project/tquality-py-core/). Требует переменную
+  `PYPI_TOKEN` в настройках CI/CD (protected, masked).
+- **`publish`** - дублирующая публикация в GitLab Package Registry
+  (внутреннее зеркало).
 - **`mirror-to-github`** - master и сам тег отправляются в
   https://github.com/Tquality-ru/tquality-py-core (ветки `feature/*`
   на зеркало не копируются).

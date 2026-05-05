@@ -3,6 +3,25 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [Unreleased]
+
+### Добавлено
+
+- **Публикация в публичный PyPI**: метаданные пакета (`readme`,
+  `keywords`, `classifiers`, `project.urls`) приведены к виду,
+  ожидаемому PyPI. Установка стала однострочной:
+  `pip install tquality-py-core` / `uv add tquality-py-core`.
+- CI-джоб **`publish-pypi`** загружает пакет на https://pypi.org
+  на git-теге `vX.Y.Z`. Требует переменную `PYPI_TOKEN` в
+  настройках CI/CD (protected, masked). GitLab Package Registry
+  остаётся как внутреннее зеркало.
+
+### Изменено
+
+- README: PyPI обозначен основным источником установки;
+  установка через GitHub-зеркало по тегу осталась как альтернатива
+  для проверки невыпущенных коммитов.
+
 ## [0.1.3] - 2026-04-24
 
 ### Добавлено

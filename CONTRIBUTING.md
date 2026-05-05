@@ -116,16 +116,32 @@ git tag -a v0.2.0 -m "v0.2.0"
 git push origin v0.2.0
 ```
 
-Push тега `vX.Y.Z` триггерит два CI-джоба в stage `release`:
+Push тега `vX.Y.Z` триггерит три CI-джоба в stage `release`:
 
-- **`publish`** - сборка (`uv build` получает версию из тега через
-  `hatch-vcs`) и публикация пакета в GitLab Package Registry
-  (`https://git.tquality.ru/frameworks/python/tquality-py-core/-/packages`).
+- **`publish-pypi`** - сборка (`uv build` получает версию из тега через
+  `hatch-vcs`) и публикация пакета в публичный
+  [PyPI](https://pypi.org/project/tquality-py-core/). Это основной канал
+  установки для всех потребителей.
+- **`publish`** - дублирующая публикация в GitLab Package Registry
+  (`https://git.tquality.ru/frameworks/python/tquality-py-core/-/packages`)
+  как внутреннее зеркало.
 - **`mirror-to-github`** - пушит `master` и сам тег в
   https://github.com/Tquality-ru/tquality-py-core (feature-ветки и
   служебные refs не зеркалируются).
 
-### Установка пакета из GitLab Package Registry
+### Настройка публикации в PyPI (однократно)
+
+1. На https://pypi.org/manage/account/token/ создать API-токен со
+   scope, ограниченным проектом `tquality-py-core` (после первой
+   ручной публикации). Для самой первой публикации нужен токен с
+   глобальным scope.
+2. В GitLab: **Settings → CI/CD → Variables** добавить переменную:
+   - Key: `PYPI_TOKEN`
+   - Value: токен с PyPI (включая префикс `pypi-`)
+   - Protected: yes (только для protected refs, включая теги `v*`)
+   - Masked: yes
+
+### Установка пакета из GitLab Package Registry (внутренний канал)
 
 ```bash
 uv pip install tquality-py-core \
@@ -144,7 +160,7 @@ explicit = true
 tquality-py-core = { index = "tquality" }
 ```
 
-### Настройка зеркалирования (однократно)
+### Настройка зеркалирования в GitHub (однократно)
 
 1. Создать GitHub Personal Access Token с правами `public_repo` (или `repo`
    для приватных).
