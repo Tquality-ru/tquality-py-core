@@ -82,6 +82,7 @@ only-include = [
     "schema",
     "scripts",
     "README.md",
+    "README.ru.md",
     "LICENSE",
     "NOTICE",
     "CONTRIBUTING.md",

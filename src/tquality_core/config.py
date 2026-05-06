@@ -44,7 +44,7 @@ def _find_project_root() -> Path | None:
     current = Path.cwd().resolve()
     for parent in (current, *current.parents):
         pyproject = parent / "pyproject.toml"
-        if pyproject.exists() and "tool.uv.workspace" in pyproject.read_text():
+        if pyproject.exists() and "tool.uv.workspace" in pyproject.read_text(encoding="utf-8"):
             return parent
     return None
 

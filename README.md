@@ -1,71 +1,74 @@
 # tquality-py-core
 
-Независимое от драйвера ядро для автоматизации тестирования tquality. Предоставляет
-основу, на которой строятся пакеты, специфичные для драйверов (Selenium,
-Appium, WinAppDriver).
+**Languages:** **English** · [Русский](README.ru.md)
 
-## Компоненты
+Driver-agnostic core for the tquality test automation framework. Provides
+the foundation that driver-specific packages (Selenium, Appium,
+WinAppDriver) build on.
 
-- **`BaseConfig`** - конфигурация на основе pydantic-settings с загрузкой из
-  `config.json5` (с поддержкой комментариев и висячих запятых через json5),
-  переменных окружения и dotenv. Для добавления полей, специфичных для
-  драйвера, используется наследование.
-- **`Logger`, `LogLevel`, `step`** - журналирование в контексте одного теста
-  с интеграцией allure. Уровни шагов: `NORMAL`, `CRITICAL` (снимок экрана в
-  конце) и `WITH_SCREENCAST` (видеозапись шага через подключаемый поставщик).
-- **`BaseForm`** - базовый класс для страниц и форм (страница - форма с полным
-  контекстом).
-- **`BaseElement`** - абстрактный интерфейс, который реализуют элементы,
-  специфичные для драйвера.
-- **`StringUtils`** - вспомогательные функции разбора строк.
+## Components
 
-## Не входит в ядро
+- **`BaseConfig`** — pydantic-settings configuration that loads from
+  `config.json5` (with comment and trailing-comma support via json5),
+  environment variables and dotenv files. Subclass it to add
+  driver-specific fields.
+- **`Logger`, `LogLevel`, `step`** — per-test logging with allure
+  integration. Step levels: `NORMAL`, `CRITICAL` (screenshot at the
+  end), `WITH_SCREENCAST` (step video via a pluggable provider).
+- **`BaseForm`** — base class for pages and forms (a page is just a
+  form with the full context).
+- **`BaseElement`** — abstract interface implemented by driver-specific
+  element types.
+- **`StringUtils`** — string-parsing helpers.
 
-- Конкретная интеграция с драйверами (Selenium, Appium, WinAppDriver) -
-  живёт в отдельных пакетах, зависящих от этого ядра.
-- Типы элементов (`Button`, `Input`, `Label` и т. п.) - реализации,
-  специфичные для драйвера, живут рядом с интеграцией драйвера.
-- Настройка контейнера внедрения зависимостей - каждый использующий пакет
-  собирает свой контейнер через `dependency-injector`, регистрируя службы
-  ядра и службы, специфичные для драйвера.
+## Out of scope
 
-## Контракт интеграции
+- Concrete driver integrations (Selenium, Appium, WinAppDriver) — live
+  in separate packages that depend on this core.
+- Element types (`Button`, `Input`, `Label`, etc.) — driver-specific
+  implementations sit alongside the corresponding driver integration.
+- DI container wiring — every consumer assembles its own container via
+  `dependency-injector`, registering both core services and
+  driver-specific services.
 
-Использующие пакеты должны:
+## Integration contract
 
-1. Наследовать `BaseConfig` с полями, специфичными для драйвера.
-2. Зарегистрировать функцию получения `Logger` через
-   `set_logger_resolver(lambda: YourServices.logger())`, где `YourServices` -
-   контейнер использующего пакета. Это нужно, чтобы `step()` из ядра
-   находил активный `Logger` в любом модуле.
-3. При необходимости реализовать `ScreenshotProvider` / `ScreencastProvider`
-   и внедрить их в `Logger` через контейнер, чтобы шаги уровня `CRITICAL`
-   прикрепляли снимки экрана, а `WITH_SCREENCAST` - видеозапись (конкретный
-   формат - на стороне поставщика, например webm в Selenium) к отчёту
-   allure. Без поставщиков шаги проходят с предупреждением в журнал.
-4. Предоставить конкретные подклассы `BaseElement` с логикой поиска и
-   ожидания.
+Consumer packages must:
 
-## Требования
+1. Subclass `BaseConfig` with driver-specific fields.
+2. Register a `Logger` resolver via
+   `set_logger_resolver(lambda: YourServices.logger())`, where
+   `YourServices` is the consumer package's container. This lets
+   `step()` from the core find the active `Logger` from any module.
+3. Where needed, implement `ScreenshotProvider` / `ScreencastProvider`
+   and inject them into `Logger` through the container, so that
+   `CRITICAL` steps attach screenshots and `WITH_SCREENCAST` steps
+   attach a recording (the concrete format is up to the provider — for
+   example webm in Selenium) to the allure report. Without providers
+   the steps still pass, but with a warning in the log.
+4. Provide concrete `BaseElement` subclasses with their own lookup and
+   wait logic.
+
+## Requirements
 
 - Python 3.12+
 
-## Установка
+## Installation
 
-Пакет публикуется в [публичный PyPI](https://pypi.org/project/tquality-py-core/).
-Это рекомендуемый способ установки для всех потребителей:
+The package is published to [public PyPI](https://pypi.org/project/tquality-py-core/).
+This is the recommended installation path for all consumers:
 
 ```bash
 pip install tquality-py-core
 ```
 
-или с использованием [uv](https://docs.astral.sh/uv/):
+or with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv add tquality-py-core
 ```
 
-В `pyproject.toml` потребителя:
+In the consumer's `pyproject.toml`:
 
 ```toml
 dependencies = [
@@ -73,17 +76,17 @@ dependencies = [
 ]
 ```
 
-### Альтернатива: установка из GitHub-зеркала
+### Alternative: install from the GitHub mirror
 
-Если нужна сборка из исходников (например, для проверки коммита,
-ещё не вышедшего в релиз), пакет также доступен из публичного
-GitHub-зеркала по тегу:
+For a source build (for example, to verify a commit that has not yet
+been released), the package is also available from the public GitHub
+mirror by tag:
 
 ```bash
 uv pip install "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3"
 ```
 
-В этом случае hatch у потребителя требует явного разрешения
+In that case hatch on the consumer side requires explicit opt-in to
 `direct-references`:
 
 ```toml
@@ -93,22 +96,22 @@ allow-direct-references = true
 
 ## CLI
 
-После установки доступна команда `tquality-config`:
+After installation the `tquality-config` command is available:
 
 ```bash
-tquality-config init        # сгенерировать config.json5 со значениями по умолчанию
-tquality-config schema      # сгенерировать schema/config.schema.json (для сопровождающих)
+tquality-config init        # generate config.json5 with default values
+tquality-config schema      # generate schema/config.schema.json (for maintainers)
 ```
 
-Сгенерированный `config.json5` включает ссылку на JSON-схему, опубликованную
-через jsDelivr. Адрес автоматически привязан к версии пакета: при установке
-выпущенной версии (`0.1.3`) → `@v0.1.3`, при установке невыпущенной версии
-(`+g...`, `.dev`) → `@master`:
+The generated `config.json5` includes a reference to the JSON Schema
+published via jsDelivr. The address is automatically pinned to the
+package version: a released install (`0.1.3`) → `@v0.1.3`; an
+unreleased install (`+g...`, `.dev`) → `@master`:
 
 ```jsonc
 {
     "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@v0.1.3/schema/config.schema.json",
-    // Комментарии поддерживаются - можно пояснить выбор значения.
+    // Comments are supported — useful to explain the chosen value.
     "base_url": "http://localhost",
     "default_timeout": 10.0,
     "log_dir": "logs",
@@ -116,39 +119,39 @@ tquality-config schema      # сгенерировать schema/config.schema.js
 }
 ```
 
-Редакторы с поддержкой JSON Schema (VS Code, JetBrains IDE) автоматически
-подсказывают доступные поля и проверяют значения. Синтаксис jsonc/json5
-позволяет оставлять комментарии `//` и `/* */` и висячие запятые.
+Editors with JSON Schema support (VS Code, JetBrains IDEs) autocomplete
+the available fields and validate values. The jsonc/json5 syntax allows
+`//` and `/* */` comments and trailing commas.
 
-## Разработка
+## Development
 
-См. [CONTRIBUTING.md](CONTRIBUTING.md) для инструкций по настройке окружения
-разработчика, установке перехватчиков git и проверке типов mypy.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for environment setup, git-hook
+installation and mypy type checking.
 
 ## CI/CD
 
-GitLab CI запускает две проверки на каждом MR и на master:
+GitLab CI runs two checks on every MR and on master:
 
-- **`mypy`** - строгий режим проверки типов.
-- **`tests`** - запуск pytest с отчётом JUnit.
+- **`mypy`** — strict mode type checking.
+- **`tests`** — pytest with a JUnit report.
 
-При публикации тега git вида `vX.Y.Z`:
+On a git tag `vX.Y.Z`:
 
-- **`publish-pypi`** - сборка (версия берётся из тега через `hatch-vcs`)
-  и загрузка пакета в публичный
-  [PyPI](https://pypi.org/project/tquality-py-core/). Требует переменную
-  `PYPI_TOKEN` в настройках CI/CD (protected, masked).
-- **`publish`** - дублирующая публикация в GitLab Package Registry
-  (внутреннее зеркало).
-- **`mirror-to-github`** - master и сам тег отправляются в
-  https://github.com/Tquality-ru/tquality-py-core (ветки `feature/*`
-  на зеркало не копируются).
+- **`publish-pypi`** — build (version derived from the tag via
+  `hatch-vcs`) and upload to public
+  [PyPI](https://pypi.org/project/tquality-py-core/). Requires the
+  `PYPI_TOKEN` variable in CI/CD settings (protected, masked).
+- **`publish`** — duplicate publication to the GitLab Package Registry
+  (internal mirror).
+- **`mirror-to-github`** — master and the tag are pushed to
+  https://github.com/Tquality-ru/tquality-py-core (`feature/*` branches
+  are not copied to the mirror).
 
-История версий - в [CHANGELOG.md](CHANGELOG.md).
+Version history lives in [CHANGELOG.md](CHANGELOG.md).
 
-## Зачем это существует
+## Why this exists
 
-Отделяет универсальные шаблоны (журналирование, объекты страниц, загрузка
-конфигурации) от кода, специфичного для драйвера. Appium и WinAppDriver
-повторно используют ту же модель объектов страниц, отчётность по шагам и
-конвейер конфигурации без обязательной зависимости от Selenium.
+Separates universal patterns (logging, page objects, configuration
+loading) from driver-specific code. Appium and WinAppDriver reuse the
+same page-object model, step reporting and configuration pipeline
+without a hard dependency on Selenium.
