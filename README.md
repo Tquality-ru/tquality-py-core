@@ -62,37 +62,27 @@ This is the recommended installation path for all consumers:
 pip install tquality-py-core
 ```
 
-or with [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv add tquality-py-core
-```
-
-In the consumer's `pyproject.toml`:
+Or in `pyproject.toml`:
 
 ```toml
 dependencies = [
-    "tquality-py-core>=0.1.3",
+    "tquality-py-core>=0.1.5",
 ]
 ```
 
 ### Alternative: install from the GitHub mirror
 
-For a source build (for example, to verify a commit that has not yet
-been released), the package is also available from the public GitHub
-mirror by tag:
-
-```bash
-uv pip install "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3"
-```
-
-In that case hatch on the consumer side requires explicit opt-in to
-`direct-references`:
+For a source build (e.g., to verify a commit that has not yet been
+released), the package is also available by git tag from the public
+GitHub mirror:
 
 ```toml
-[tool.hatch.metadata]
-allow-direct-references = true
+dependencies = [
+    "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.5",
+]
 ```
+
+Direct git references require `[tool.hatch.metadata] allow-direct-references = true` on the consumer's side.
 
 ## CLI
 
@@ -128,26 +118,10 @@ the available fields and validate values. The jsonc/json5 syntax allows
 See [CONTRIBUTING.md](CONTRIBUTING.md) for environment setup, git-hook
 installation and mypy type checking.
 
-## CI/CD
+## Version history
 
-GitLab CI runs two checks on every MR and on master:
-
-- **`mypy`** — strict mode type checking.
-- **`tests`** — pytest with a JUnit report.
-
-On a git tag `vX.Y.Z`:
-
-- **`publish-pypi`** — build (version derived from the tag via
-  `hatch-vcs`) and upload to public
-  [PyPI](https://pypi.org/project/tquality-py-core/). Requires the
-  `PYPI_TOKEN` variable in CI/CD settings (protected, masked).
-- **`publish`** — duplicate publication to the GitLab Package Registry
-  (internal mirror).
-- **`mirror-to-github`** — master and the tag are pushed to
-  https://github.com/Tquality-ru/tquality-py-core (`feature/*` branches
-  are not copied to the mirror).
-
-Version history lives in [CHANGELOG.md](CHANGELOG.md).
+See [CHANGELOG.md](CHANGELOG.md). CI/CD details live in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Why this exists
 

@@ -61,17 +61,11 @@ Appium, WinAppDriver).
 pip install tquality-py-core
 ```
 
-или с использованием [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv add tquality-py-core
-```
-
-В `pyproject.toml` потребителя:
+Или в `pyproject.toml`:
 
 ```toml
 dependencies = [
-    "tquality-py-core>=0.1.3",
+    "tquality-py-core>=0.1.5",
 ]
 ```
 
@@ -81,17 +75,13 @@ dependencies = [
 ещё не вышедшего в релиз), пакет также доступен из публичного
 GitHub-зеркала по тегу:
 
-```bash
-uv pip install "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.3"
-```
-
-В этом случае hatch у потребителя требует явного разрешения
-`direct-references`:
-
 ```toml
-[tool.hatch.metadata]
-allow-direct-references = true
+dependencies = [
+    "tquality-py-core @ git+https://github.com/Tquality-ru/tquality-py-core.git@v0.1.5",
+]
 ```
+
+Прямые git-ссылки требуют `[tool.hatch.metadata] allow-direct-references = true` у потребителя.
 
 ## CLI
 
@@ -127,26 +117,10 @@ tquality-config schema      # сгенерировать schema/config.schema.js
 См. [CONTRIBUTING.md](CONTRIBUTING.md) для инструкций по настройке окружения
 разработчика, установке перехватчиков git и проверке типов mypy.
 
-## CI/CD
+## История версий
 
-GitLab CI запускает две проверки на каждом MR и на master:
-
-- **`mypy`** - строгий режим проверки типов.
-- **`tests`** - запуск pytest с отчётом JUnit.
-
-При публикации тега git вида `vX.Y.Z`:
-
-- **`publish-pypi`** - сборка (версия берётся из тега через `hatch-vcs`)
-  и загрузка пакета в публичный
-  [PyPI](https://pypi.org/project/tquality-py-core/). Требует переменную
-  `PYPI_TOKEN` в настройках CI/CD (protected, masked).
-- **`publish`** - дублирующая публикация в GitLab Package Registry
-  (внутреннее зеркало).
-- **`mirror-to-github`** - master и сам тег отправляются в
-  https://github.com/Tquality-ru/tquality-py-core (ветки `feature/*`
-  на зеркало не копируются).
-
-История версий - в [CHANGELOG.md](CHANGELOG.md).
+См. [CHANGELOG.md](CHANGELOG.md). Описание CI/CD - в
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Зачем это существует
 

@@ -3,6 +3,40 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.6] - 2026-05-20
+
+### Добавлено
+
+- **`tquality_core.utils.xpath_utils.XPathUtils`** - driver-agnostic
+  хелперы для XPath-строк: `normalize(value)` (приведение `.`/`./foo`/
+  `foo` к форме, безопасной для конкатенации с родительским локатором)
+  и `literal(value)` (квотирование значений в xpath-предикатах с
+  обработкой встроенных кавычек через `concat(...)`). Вынесено из
+  `tquality_selenium.utils.locator_utils` для переиспользования
+  драйверными пакетами (`tquality-py-selenium`, `tquality-py-appium`).
+- **`tquality_core.utils.os_utils.OSUtils`** - driver-agnostic проверки
+  текущей платформы: `is_macos()`, `is_windows()`, `is_linux()`,
+  `current_platform()`. Вынесено из `tquality_selenium.utils.os_utils`;
+  карты поддержки конкретных драйверов остаются в драйверных пакетах.
+- **`tquality_core.schema.build_schema_url(package_name, repo_owner,
+  repo_name)`** и **`resolve_ref(package_name)`** - публичные хелперы
+  для построения схема-URL по версии любого пакета. Драйверные пакеты
+  переиспользуют их вместо дублирования логики `_resolve_ref`.
+- **`tquality_core.cli.build_cli(prog, description, config_cls,
+  schema_url)`** - фабрика `main`-функции CLI. Драйверные пакеты
+  собирают свой `tquality-<driver>-config` одной строкой вместо
+  копирования argparse-плиты.
+- `generate_schema(config_cls, *, schema_url=None)` и
+  `write_schema_file(path, config_cls, *, schema_url=None)` принимают
+  необязательный `schema_url` - для подстановки URL драйверного пакета.
+
+### Изменено
+
+- **`$schema` в генерируемых JSON-схемах**: `draft-07` →
+  `draft/2020-12`. Pydantic 2 эмитит 2020-12-features (`$defs`,
+  `prefixItems`), указание устаревшего диалекта вводило валидаторы
+  в заблуждение. Файл `schema/config.schema.json` перегенерирован.
+
 ## [0.1.5] - 2026-05-06
 
 ### Добавлено

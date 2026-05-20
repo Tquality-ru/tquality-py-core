@@ -6,17 +6,7 @@ import json
 from pathlib import Path
 
 from tquality_core.config import BaseConfig
-from tquality_core.schema import SCHEMA_URL, generate_schema
-
-
-def test_generated_schema_contains_all_fields() -> None:
-    schema = generate_schema()
-
-    assert schema["$schema"] == "http://json-schema.org/draft-07/schema#"
-    assert schema["$id"] == SCHEMA_URL
-    assert set(schema["properties"].keys()) == {
-        "base_url", "default_timeout", "log_dir", "highlight_elements",
-    }
+from tquality_core.schema import generate_schema
 
 
 def test_committed_schema_matches_base_config() -> None:
