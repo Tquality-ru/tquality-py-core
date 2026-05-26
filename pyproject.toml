@@ -35,9 +35,15 @@ dependencies = [
     "pydantic-settings>=2.0",
     "dependency-injector>=4.41",
     "allure-python-commons>=2.13",
-    # json5 - парсер jsonc/json5: комментарии // и /* */, trailing commas
-    # в config.json. Чистый Python.
     "json5>=0.9",
+]
+
+[project.optional-dependencies]
+screencast = [
+    "imageio>=2.34",
+    "imageio-ffmpeg>=0.5",
+    "numpy>=1.26",
+    "Pillow>=10.0",
 ]
 
 [project.urls]
