@@ -3,6 +3,38 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.9] - 2026-05-26
+
+### Добавлено
+
+- **`tquality_core.per_test_files`** - pytest-плагин и registration
+  API для платформо-агностичной пересборки конфигов под директорию
+  каждого теста. Регистрируется автоматически через
+  `[project.entry-points.pytest11]` (`tquality_core_per_test_files`).
+  - `register_per_test_rebuilder(rebuilder)` - зарегистрировать
+    функцию `(test_dir: Path) -> teardown | None`; плагин вызывает её
+    перед каждым тестом и (если возвращён teardown-колбэк) - в
+    обратном порядке после теста. Регистрация идемпотентна:
+    одна и та же функция не добавится дважды.
+  - `find_upwards(start, filename, stop_at=("pyproject.toml",))` -
+    помощник: поднимается по родительским директориям, возвращает
+    первый совпавший путь или `None` при достижении маркера
+    workspace.
+  - `cwd(path)` - chdir-контекст-менеджер; удобно оборачивать
+    конструкторы pydantic-settings, читающие файлы относительно CWD.
+
+  Зачем: `BaseConfig` уже умеет цепочку `config.json5` от CWD к корню
+  workspace, но pytest-у безразлично, в какой подпапке тест - CWD
+  один на весь процесс. Платформенные интеграции (appium, selenium)
+  регистрируют свой rebuilder в `Services.setup()` - он chdir'ит в
+  `test_dir`, пересобирает свой типизированный `*Config` и делает
+  `.override(...)` на DI-провайдере; teardown откатывает override.
+  Тем самым `tests/ios/`, `tests/android/`, `tests/integration/`
+  могут иметь свои `config.json5` / `capabilities.json5` без env-
+  переменных и явных параметров запуска. Реэкспортированы на
+  верхний уровень: `tquality_core.register_per_test_rebuilder`,
+  `tquality_core.find_upwards`.
+
 ## [0.1.8] - 2026-05-26
 
 ### Добавлено

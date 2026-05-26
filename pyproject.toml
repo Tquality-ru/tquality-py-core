@@ -55,6 +55,9 @@ Changelog = "https://github.com/Tquality-ru/tquality-py-core/blob/master/CHANGEL
 [project.scripts]
 tquality-config = "tquality_core.cli:main"
 
+[project.entry-points.pytest11]
+tquality_core_per_test_files = "tquality_core.per_test_files"
+
 [dependency-groups]
 dev = [
     "mypy>=1.11",

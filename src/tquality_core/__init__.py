@@ -1,5 +1,9 @@
 from tquality_core.config import BaseConfig
 from tquality_core.elements.base_element import BaseElement
+from tquality_core.per_test_files import (
+    find_upwards,
+    register_per_test_rebuilder,
+)
 from tquality_core.elements.element_state import (
     ElementState,
     StatePredicate,
@@ -47,6 +51,8 @@ __all__ = [
     "WebDriverScreenshotProvider",
     "WebmScreencastRecorder",
     "XPathUtils",
+    "find_upwards",
+    "register_per_test_rebuilder",
     "set_logger_resolver",
     "step",
 ]
