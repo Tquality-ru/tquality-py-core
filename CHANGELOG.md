@@ -3,6 +3,18 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.8] - 2026-05-26
+
+### Добавлено
+
+- **`tquality_core.elements.element_state`** - перенесён из
+  `tquality-py-appium` (тот же `ElementState` enum: `DISPLAYED`,
+  `CLICKABLE`, `EXISTS_IN_ANY_STATE`; те же `StatePredicate` и `StateSpec`
+  типы). Семантика общая для appium и selenium; маппинг state →
+  `wait.until_*` остаётся в платформенном `BaseElement._await_state(...)`,
+  чтобы переиспользовать платформенный `ElementWaiter`. Реэкспортирован
+  на верхний уровень `tquality_core`.
+
 ## [0.1.7] - 2026-05-26
 
 ### Добавлено

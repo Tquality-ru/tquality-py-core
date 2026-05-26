@@ -1,5 +1,10 @@
 from tquality_core.config import BaseConfig
 from tquality_core.elements.base_element import BaseElement
+from tquality_core.elements.element_state import (
+    ElementState,
+    StatePredicate,
+    StateSpec,
+)
 from tquality_core.elements.locator import Locator
 from tquality_core.pages.base_form import BaseForm
 from tquality_core.services.lazy_elements import LazyElements
@@ -25,6 +30,7 @@ __all__ = [
     "BaseConfig",
     "BaseElement",
     "BaseForm",
+    "ElementState",
     "LazyElements",
     "Locator",
     "Logger",
@@ -33,6 +39,8 @@ __all__ = [
     "ResolvedWaiter",
     "ScreencastProvider",
     "ScreenshotProvider",
+    "StatePredicate",
+    "StateSpec",
     "StringUtils",
     "Waiter",
     "WaitTimeoutError",
