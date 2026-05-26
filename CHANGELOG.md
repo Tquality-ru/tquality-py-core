@@ -3,6 +3,51 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.7] - 2026-05-26
+
+### Добавлено
+
+- **`tquality_core.services.waiter.Waiter`** - платформо-агностичный
+  explicit-waiter с собственным polling-циклом. По умолчанию возвращает
+  `bool` на таймаут (не кидает исключение); опционально -
+  `raise_on_timeout=True` (поднимает `WaitTimeoutError`) либо
+  пользовательский класс (`raise_on_timeout=MyError`). Конфигурируется
+  `timeout` / `poll_interval` per-call. Конструктор принимает
+  `default_raise_cls` и `ignored_exceptions` - чтобы платформенные пакеты
+  могли преднастроить «свой» дефолт (например, selenium-
+  `TimeoutException` и `NoSuchElementException`-семейство).
+- **`WaitTimeoutError(TimeoutError)`** - дефолтный класс исключения
+  для `Waiter.until(raise_on_timeout=True)`.
+- **`ResolvedWaiter[T]`** - адаптер, прокидывающий лениво-вычисляемый
+  объект (driver, browser, контекст) в condition. Принимает core-`Waiter`
+  и `resolver: Callable[[], T]`, разворачивает
+  `until(Callable[[T], Any])` → `Waiter.until(Callable[[], Any])`.
+  Базовый класс для платформенных `DriverWaiter`.
+- **`WebDriverScreenshotProvider`** - реализация
+  `ScreenshotProvider`-протокола через
+  `driver.get_screenshot_as_png()`. Подходит любому объекту с этим
+  методом (selenium-WebDriver, appium-WebDriver, undetected-chromedriver).
+- **`WebmScreencastRecorder`** - фоновый рекордер скринкаста: PNG-кадры
+  через инжектируемый `frame_source` → склейка в webm/VP9 через
+  imageio-ffmpeg. Каждый захваченный кадр повторяется в выходе столько
+  output-тиков, сколько нужно для покрытия его реальной длительности
+  при заданном `output_fps` (паузы остаются паузами). Зависимости
+  (`imageio`, `imageio-ffmpeg`, `numpy`, `Pillow`) импортируются лениво
+  внутри `stop()` и подключаются через extra-группу `[screencast]`.
+- **`LazyElements[E]`** - платформо-агностичная snapshot-кэширующая
+  коллекция типизированных элементов. Перенесена из
+  `tquality-py-appium`. Driver инжектится через
+  `driver_resolver: Callable[[], Any]`; от объекта требуется только
+  метод `find_elements(by, value)` (есть у selenium-WebDriver,
+  appium-WebDriver, BrowserService, AppiumDriverService).
+
+### Изменено
+
+- `[project.optional-dependencies]` - добавлена группа `screencast`
+  (`imageio>=2.34`, `imageio-ffmpeg>=0.5`, `numpy>=1.26`, `Pillow>=10.0`).
+  Установить: `pip install tquality-py-core[screencast]`. Платформенные
+  пакеты подключают её через `tquality-py-core[screencast]>=0.1.7`.
+
 ## [0.1.6] - 2026-05-20
 
 ### Добавлено
