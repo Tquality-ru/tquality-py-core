@@ -83,6 +83,12 @@ class ScreencastProvider(Protocol):
         ...
 
 
+StepEnterHook = Callable[["_Step"], None]
+StepExitHook = Callable[
+    ["_Step", type[BaseException] | None, BaseException | None], None,
+]
+
+
 class _Step:
     """Внутренняя реализация шага, используется как контекстный менеджер и декоратор."""
 
@@ -97,6 +103,14 @@ class _Step:
     def __enter__(self) -> _Step:
         self._logger.info("Шаг: %s", self._title)
         self._allure_step.__enter__()  # type: ignore[no-untyped-call]
+        self._logger._step_stack += (self,)
+        for hook in self._logger._enter_hooks:
+            try:
+                hook(self)
+            except Exception as exc:  # noqa: BLE001
+                self._logger.warning(
+                    "Step enter hook %r упал: %s", hook, exc,
+                )
         if self._level == LogLevel.WITH_SCREENCAST:
             provider = self._logger.screencast_provider
             if provider is None:
@@ -128,7 +142,17 @@ class _Step:
                 self._attach_screenshot(failed=exc_type is not None)
             elif self._level == LogLevel.WITH_SCREENCAST:
                 self._attach_screencast()
+            for hook in self._logger._exit_hooks:
+                try:
+                    hook(self, exc_type, exc_val)
+                except Exception as exc:  # noqa: BLE001
+                    self._logger.warning(
+                        "Step exit hook %r упал: %s", hook, exc,
+                    )
         finally:
+            stack = self._logger._step_stack
+            if stack and stack[-1] is self:
+                self._logger._step_stack = stack[:-1]
             self._allure_step.__exit__(exc_type, exc_val, exc_tb)  # type: ignore[no-untyped-call]
             status = "СБОЙ" if exc_type else "завершен"
             self._logger.info("Шаг %s: %s", status, self._title)
@@ -219,6 +243,13 @@ class Logger:
         self.screenshot_provider = screenshot_provider
         self.screencast_provider = screencast_provider
 
+        # Стек активных шагов и хуки на enter/exit - per-Logger,
+        # чтобы в параллельных прогонах не путать "innermost step какого
+        # из тестов". Каждый тест получает свой Logger, свой стек, свои хуки.
+        self._step_stack: tuple[_Step, ...] = ()
+        self._enter_hooks: list[StepEnterHook] = []
+        self._exit_hooks: list[StepExitHook] = []
+
         self._started_at = datetime.now()
         timestamp = self._started_at.strftime("%Y%m%d_%H%M%S")
         node_id = _get_test_node_id()
@@ -256,6 +287,56 @@ class Logger:
 
     def step(self, title: str, level: LogLevel = LogLevel.NORMAL) -> _Step:
         return _Step(self, title, level=level)
+
+    def register_step_enter_hook(
+        self, hook: StepEnterHook,
+    ) -> Callable[[], None]:
+        """Зарегистрировать колбэк, вызываемый при входе в любой шаг.
+
+        Колбэк получает `(step,)`. Хук вызывается уже после push в стек,
+        поэтому внутри хука `logger.current_step is step`. Исключения
+        логируются как warning, не ломают шаг. Возвращает unregister-callable.
+        """
+        self._enter_hooks.append(hook)
+
+        def _unregister() -> None:
+            try:
+                self._enter_hooks.remove(hook)
+            except ValueError:
+                pass
+
+        return _unregister
+
+    def register_step_exit_hook(
+        self, hook: StepExitHook,
+    ) -> Callable[[], None]:
+        """Зарегистрировать колбэк, вызываемый при выходе из любого шага.
+
+        Колбэк получает `(step, exc_type, exc_val)` - может судить по
+        `exc_type`, упал ли шаг, и читать `step._title` / `step._level`.
+        Хук вызывается до pop из стека (`logger.current_step is step` внутри).
+        Исключения логируются как warning, не ломают шаг. Возвращает
+        unregister-callable.
+        """
+        self._exit_hooks.append(hook)
+
+        def _unregister() -> None:
+            try:
+                self._exit_hooks.remove(hook)
+            except ValueError:
+                pass
+
+        return _unregister
+
+    @property
+    def current_step(self) -> _Step | None:
+        """Innermost активный шаг (вершина стека) или None если нет активных."""
+        return self._step_stack[-1] if self._step_stack else None
+
+    @property
+    def active_step_stack(self) -> tuple[_Step, ...]:
+        """Снимок стека активных шагов от outermost к innermost."""
+        return self._step_stack
 
 
 _logger_resolver: Callable[[], Logger] | None = None
