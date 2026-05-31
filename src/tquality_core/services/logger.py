@@ -83,14 +83,16 @@ class ScreencastProvider(Protocol):
         ...
 
 
-StepEnterHook = Callable[["_Step"], None]
+StepEnterHook = Callable[["Step"], None]
 StepExitHook = Callable[
-    ["_Step", type[BaseException] | None, BaseException | None], None,
+    ["Step", type[BaseException] | None, BaseException | None], None,
 ]
 
 
-class _Step:
-    """Внутренняя реализация шага, используется как контекстный менеджер и декоратор."""
+class Step:
+    """Шаг - контекстный менеджер и декоратор. Передается в step-хуки и
+    доступен через `Logger.current_step` / `active_step_stack`, поэтому
+    `title` / `level` - публичные."""
 
     def __init__(
         self, logger: Logger, title: str, level: LogLevel = LogLevel.NORMAL,
@@ -100,7 +102,15 @@ class _Step:
         self._level = level
         self._allure_step = allure.step(title)
 
-    def __enter__(self) -> _Step:
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @property
+    def level(self) -> LogLevel:
+        return self._level
+
+    def __enter__(self) -> Step:
         self._logger.info("Шаг: %s", self._title)
         self._allure_step.__enter__()  # type: ignore[no-untyped-call]
         self._logger._step_stack += (self,)
@@ -246,7 +256,7 @@ class Logger:
         # Стек активных шагов и хуки на enter/exit - per-Logger,
         # чтобы в параллельных прогонах не путать "innermost step какого
         # из тестов". Каждый тест получает свой Logger, свой стек, свои хуки.
-        self._step_stack: tuple[_Step, ...] = ()
+        self._step_stack: tuple[Step, ...] = ()
         self._enter_hooks: list[StepEnterHook] = []
         self._exit_hooks: list[StepExitHook] = []
 
@@ -285,8 +295,8 @@ class Logger:
     def debug(self, msg: str, *args: Any) -> None:
         self._logger.debug(msg, *args)
 
-    def step(self, title: str, level: LogLevel = LogLevel.NORMAL) -> _Step:
-        return _Step(self, title, level=level)
+    def step(self, title: str, level: LogLevel = LogLevel.NORMAL) -> Step:
+        return Step(self, title, level=level)
 
     def register_step_enter_hook(
         self, hook: StepEnterHook,
@@ -313,7 +323,7 @@ class Logger:
         """Зарегистрировать колбэк, вызываемый при выходе из любого шага.
 
         Колбэк получает `(step, exc_type, exc_val)` - может судить по
-        `exc_type`, упал ли шаг, и читать `step._title` / `step._level`.
+        `exc_type`, упал ли шаг, и читать `step.title` / `step.level`.
         Хук вызывается до pop из стека (`logger.current_step is step` внутри).
         Исключения логируются как warning, не ломают шаг. Возвращает
         unregister-callable.
@@ -329,12 +339,12 @@ class Logger:
         return _unregister
 
     @property
-    def current_step(self) -> _Step | None:
+    def current_step(self) -> Step | None:
         """Innermost активный шаг (вершина стека) или None если нет активных."""
         return self._step_stack[-1] if self._step_stack else None
 
     @property
-    def active_step_stack(self) -> tuple[_Step, ...]:
+    def active_step_stack(self) -> tuple[Step, ...]:
         """Снимок стека активных шагов от outermost к innermost."""
         return self._step_stack
 
@@ -351,7 +361,7 @@ def set_logger_resolver(resolver: Callable[[], Logger] | None) -> None:
     _logger_resolver = resolver
 
 
-def step(title: str, level: LogLevel = LogLevel.NORMAL) -> _Step:
+def step(title: str, level: LogLevel = LogLevel.NORMAL) -> Step:
     """Фабрика шагов уровня модуля, делегирующая зарегистрированному Logger."""
     if _logger_resolver is None:
         raise RuntimeError(

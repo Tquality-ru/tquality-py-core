@@ -7,7 +7,7 @@ default:
   # коробки. Экономит pip install uv и apt-get install git на каждом job.
   image: ghcr.io/astral-sh/uv:python3.12-bookworm
   before_script:
-    - uv sync
+    - uv sync --extra screencast
   cache:
     key:
       files:
