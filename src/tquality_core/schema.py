@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from tquality_core.config import BaseConfig
+from tquality_core.models import BaseConfig
 
 _REPO_BASE_TEMPLATE = "https://cdn.jsdelivr.net/gh/{owner}/{repo}"
 _SCHEMA_PATH = "schema/config.schema.json"

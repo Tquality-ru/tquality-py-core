@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tquality_core.config import BaseConfig
+from tquality_core.models import BaseConfig
 from tquality_core.schema import generate_schema
 
 

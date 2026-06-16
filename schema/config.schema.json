@@ -1,5 +1,28 @@
 {
-  "description": "Драйвер-независимая конфигурация.\n\nНаследуйтесь от этого класса для добавления полей, специфичных для\nдрайвера.\n\n### Порядок разрешения настроек (от высшего приоритета к низшему)\n\n1. Аргументы конструктора\n2. Переменные окружения (префикс `TEST_`)\n3. Файл `.env`\n4. Цепочка `config.json` от текущей директории вверх до корня workspace.\n   Более специфичный (ближний к cwd) побеждает менее специфичный.\n   Например, при запуске из `tests/integration/critical/` приоритет:\n   `critical/config.json` > `integration/config.json` > `tests/config.json`\n   > `config.json` в корне workspace.\n5. Значения по умолчанию.",
+  "$defs": {
+    "WaiterConfig": {
+      "description": "Настройки explicit-waiter: таймаут ожидания и интервал опроса.",
+      "properties": {
+        "timeout": {
+          "default": 10.0,
+          "description": "Таймаут по умолчанию для explicit wait операций с элементами (сек). Должен быть положительным.",
+          "exclusiveMinimum": 0,
+          "title": "Timeout",
+          "type": "number"
+        },
+        "poll_interval": {
+          "default": 0.5,
+          "description": "Пауза между опросами условия в explicit wait (сек). Должна быть положительной.",
+          "exclusiveMinimum": 0,
+          "title": "Poll Interval",
+          "type": "number"
+        }
+      },
+      "title": "WaiterConfig",
+      "type": "object"
+    }
+  },
+  "description": "Драйвер-независимая конфигурация.\n\nНаследуйтесь от этого класса для добавления полей, специфичных для\nдрайвера.\n\n### Порядок разрешения настроек (от высшего приоритета к низшему)\n\n1. Аргументы конструктора\n2. Переменные окружения (префикс `TEST_`)\n3. Файл `.env`\n4. Цепочка `config.json5` от текущей директории вверх до границы проекта\n   (корень workspace - uv `[tool.uv.workspace]`, poetry `[tool.poetry]`\n   или conda `environment.yml`; иначе корень проекта по маркерам\n   `pyproject.toml` / `setup.py` / `requirements.txt`; до корня ФС обход\n   не доходит). Более специфичный (ближний к cwd) побеждает\n   менее специфичный. Например, при запуске из `tests/integration/critical/`\n   приоритет: `critical/config.json5` > `integration/config.json5` >\n   `tests/config.json5` > `config.json5` в корне проекта.\n5. Значения по умолчанию.",
   "properties": {
     "base_url": {
       "default": "http://localhost",
@@ -8,12 +31,9 @@
       "title": "Base Url",
       "type": "string"
     },
-    "default_timeout": {
-      "default": 10.0,
-      "description": "Таймаут по умолчанию для explicit wait операций с элементами (сек). Должен быть положительным.",
-      "exclusiveMinimum": 0,
-      "title": "Default Timeout",
-      "type": "number"
+    "waiter": {
+      "$ref": "#/$defs/WaiterConfig",
+      "description": "Настройки explicit-waiter: таймаут ожидания (`timeout`) и интервал опроса условия (`poll_interval`)."
     },
     "log_dir": {
       "default": "logs",

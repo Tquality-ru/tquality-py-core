@@ -29,17 +29,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from tquality_core.config import CONFIG_FILENAME, BaseConfig
+from tquality_core.models import BaseConfig
 from tquality_core.schema import SCHEMA_URL, write_schema_file
-
-
-def _find_project_root() -> Path:
-    """Найти корень проекта: поднимаемся до pyproject.toml."""
-    current = Path.cwd().resolve()
-    for parent in (current, *current.parents):
-        if (parent / "pyproject.toml").exists():
-            return parent
-    return current
+from tquality_core.utils.path_utils import PathUtils
 
 
 def _default_config_dict(
@@ -56,8 +48,8 @@ def _make_init(
     config_cls: type[BaseConfig], schema_url: str,
 ) -> Callable[[argparse.Namespace], int]:
     def cmd_init(args: argparse.Namespace) -> int:
-        target_dir = Path(args.path).resolve() if args.path else _find_project_root()
-        target_file = target_dir / CONFIG_FILENAME
+        target_dir = Path(args.path).resolve() if args.path else (PathUtils.find_project_root() or Path.cwd())
+        target_file = target_dir / config_cls.CONFIG_FILENAME
 
         if target_file.exists() and not args.force:
             print(
@@ -85,7 +77,7 @@ def _make_schema(
     config_cls: type[BaseConfig], schema_url: str,
 ) -> Callable[[argparse.Namespace], int]:
     def cmd_schema(args: argparse.Namespace) -> int:
-        target_dir = Path(args.path).resolve() if args.path else _find_project_root()
+        target_dir = Path(args.path).resolve() if args.path else (PathUtils.find_project_root() or Path.cwd())
         target_file = target_dir / "schema" / "config.schema.json"
 
         write_schema_file(target_file, config_cls, schema_url=schema_url)

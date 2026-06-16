@@ -20,7 +20,7 @@ def test_init_creates_config(tmp_path: Path) -> None:
     data = json.loads(config_file.read_text(encoding="utf-8"))
     assert data["$schema"] == SCHEMA_URL
     assert data["base_url"] == "http://localhost"
-    assert data["default_timeout"] == 10.0
+    assert data["waiter"] == {"timeout": 10.0, "poll_interval": 0.5}
     assert data["log_dir"] == "logs"
     assert data["highlight_elements"] is False
 
@@ -59,4 +59,5 @@ def test_schema_writes_file(tmp_path: Path) -> None:
     data = json.loads(schema_file.read_text(encoding="utf-8"))
     assert data["$id"] == SCHEMA_URL
     assert "base_url" in data["properties"]
-    assert "default_timeout" in data["properties"]
+    assert "waiter" in data["properties"]
+    assert "WaiterConfig" in data["$defs"]

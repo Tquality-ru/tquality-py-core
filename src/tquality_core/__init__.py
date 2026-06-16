@@ -1,4 +1,3 @@
-from tquality_core.config import BaseConfig, ConfigSearchDir
 from tquality_core.elements.base_element import BaseElement
 from tquality_core.elements.element_state import (
     ElementState,
@@ -6,8 +5,13 @@ from tquality_core.elements.element_state import (
     StateSpec,
 )
 from tquality_core.elements.locator import Locator
+from tquality_core.models import (
+    BaseConfig,
+    JsoncConfigSettingsSource,
+    WaiterConfig,
+)
 from tquality_core.pages.base_form import BaseForm
-from tquality_core.per_test_files import (
+from tquality_core.plugins.per_test_files import (
     find_upwards,
     register_per_test_rebuilder,
 )
@@ -30,6 +34,7 @@ from tquality_core.services.webdriver_screenshot_provider import (
 )
 from tquality_core.services.webm_screencast import WebmScreencastRecorder
 from tquality_core.utils.os_utils import OSUtils
+from tquality_core.utils.path_utils import PathUtils
 from tquality_core.utils.string_utils import StringUtils
 from tquality_core.utils.xpath_utils import XPathUtils
 
@@ -37,13 +42,14 @@ __all__ = [
     "BaseConfig",
     "BaseElement",
     "BaseForm",
-    "ConfigSearchDir",
     "ElementState",
+    "JsoncConfigSettingsSource",
     "LazyElements",
     "Locator",
     "Logger",
     "LogLevel",
     "OSUtils",
+    "PathUtils",
     "ResolvedWaiter",
     "ScreencastProvider",
     "ScreenshotProvider",
@@ -55,6 +61,7 @@ __all__ = [
     "StringUtils",
     "Waiter",
     "WaitTimeoutError",
+    "WaiterConfig",
     "WebDriverScreenshotProvider",
     "WebmScreencastRecorder",
     "XPathUtils",

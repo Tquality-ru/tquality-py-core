@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 import allure
 
 if TYPE_CHECKING:
-    from tquality_core.config import BaseConfig
+    from tquality_core.models import BaseConfig
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
 _LOG_DATEFMT = "%H:%M:%S"

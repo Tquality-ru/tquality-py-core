@@ -102,7 +102,10 @@ tquality-config schema      # сгенерировать schema/config.schema.js
     "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@v0.1.3/schema/config.schema.json",
     // Комментарии поддерживаются - можно пояснить выбор значения.
     "base_url": "http://localhost",
-    "default_timeout": 10.0,
+    "waiter": {
+        "timeout": 10.0,       // таймаут explicit-wait, секунды
+        "poll_interval": 0.5,  // пауза между опросами условия, секунды
+    },
     "log_dir": "logs",
     "highlight_elements": false,
 }

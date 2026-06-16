@@ -103,7 +103,10 @@ unreleased install (`+g...`, `.dev`) → `@master`:
     "$schema": "https://cdn.jsdelivr.net/gh/Tquality-ru/tquality-py-core@v0.1.3/schema/config.schema.json",
     // Comments are supported — useful to explain the chosen value.
     "base_url": "http://localhost",
-    "default_timeout": 10.0,
+    "waiter": {
+        "timeout": 10.0,       // explicit-wait timeout, seconds
+        "poll_interval": 0.5,  // pause between condition polls, seconds
+    },
     "log_dir": "logs",
     "highlight_elements": false,
 }

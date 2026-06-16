@@ -7,29 +7,89 @@
 
 ### Добавлено
 
-- **`tquality_core.config.ConfigSearchDir`** - стартовая директория
-  поиска конфигов на базе `ContextVar` плюс хелперы обхода дерева
-  (реэкспортирован на верхний уровень `tquality_core`, добавлен в
-  `__all__`).
-  - `ConfigSearchDir.override(path)` - контекст-менеджер, временно
-    делающий `path` стартовой директорией поиска `config.json5`;
-    `None` возвращает к `Path.cwd()`. Тред- и процесс-безопасная
-    замена `os.chdir`: значение живёт в `ContextVar`, поэтому каждый
-    поток (`--threadpool`) и процесс (`-n` / xdist) видит своё, а
-    конкурентные сессии не дерутся за общий CWD. Так per-test
-    пересборка конфигов из директории теста делается без смены
-    глобального CWD.
-  - `ConfigSearchDir.current()` - текущая стартовая директория (из
+- **Пакет `tquality_core.models`** - `config.py` (с `BaseConfig` /
+  `WaiterConfig`) и `jsonc_settings_source.py` переехали из корня пакета
+  в `tquality_core.models`. Импорты верхнего уровня (`tquality_core`)
+  сохранены; внутренние пути сменились на `tquality_core.models.config`
+  / `tquality_core.models.jsonc_settings_source` (доступны и как
+  `tquality_core.models`).
+- **Блок `waiter` в конфиге** - `WaiterConfig` (`tquality_core.models`,
+  реэкспортирован на верхний уровень `tquality_core`, добавлен в
+  `__all__`) с полями `timeout` (таймаут explicit-wait, сек, `> 0`) и
+  `poll_interval` (пауза между опросами условия, сек, `> 0`). `Waiter`
+  берёт дефолты `until()` из `config.waiter.timeout` /
+  `config.waiter.poll_interval` (раньше - из `config.default_timeout`
+  и захардкоженной модульной константы `0.5`). Вложенный блок
+  мёржится поля-в-поле по цепочке `config.json5` (deep-merge), а
+  под-поля переопределяются env-переменными через
+  `env_nested_delimiter="__"` (например, `TEST_WAITER__TIMEOUT`).
+- **`BaseConfig.CONFIG_FILENAME`** - имя файла конфига теперь `ClassVar`
+  модели (`"config.json5"`), а не модульная константа. Подклассы могут
+  переопределить его под свой драйвер; цепочка и `tquality-config init`
+  используют `cls.CONFIG_FILENAME`.
+- **`tquality_core.utils.path_utils.PathUtils`** - файловые хелперы для
+  разрешения конфигов (реэкспортирован на верхний уровень
+  `tquality_core`, добавлен в `__all__`).
+  - `PathUtils.override_config_search_dir(path)` - контекст-менеджер,
+    временно делающий `path` стартовой директорией поиска `config.json5`;
+    `None` возвращает к `Path.cwd()`. Тред- и процесс-безопасная замена
+    `os.chdir`: значение живёт в `ContextVar`, поэтому каждый поток
+    (`--threadpool`) и процесс (`-n` / xdist) видит своё, а конкурентные
+    сессии не дерутся за общий CWD. Так per-test пересборка конфигов из
+    директории теста делается без смены глобального CWD.
+  - `PathUtils.config_search_dir()` - текущая стартовая директория (из
     контекста или `Path.cwd()`).
-  - `ConfigSearchDir.find_project_root()` / `collect_config_chain(...)`
-    - обход вверх до корня workspace и сбор цепочки `config.json5`
-    (ранее приватные `_find_project_root` / `_collect_config_chain`
-    уровня модуля, теперь методы класса). `BaseConfig` строит цепочку
-    конфигов от `ConfigSearchDir.current()`, а не от `Path.cwd()`
-    напрямую.
+  - `PathUtils.find_project_root(start=None)` - ближайшая вверх директория
+    с любым из `PathUtils.PROJECT_MARKERS` (`pyproject.toml` / `setup.py` /
+    `requirements.txt`); `PathUtils.find_workspace_root(start=None)` -
+    ближайшая вверх директория с одним из `PathUtils.WORKSPACE_MARKERS`
+    (uv: `pyproject.toml` с `[tool.uv.workspace]`; poetry: `pyproject.toml`
+    с `[tool.poetry]`; conda: `environment.yml` / `environment.yaml`).
+  - `PathUtils.resolve_path_chain(start, filename, stop=None)` - сбор
+    `filename` вверх по дереву от `start`. `BaseConfig` строит цепочку
+    `config.json5` через него.
+  - `PathUtils.find_upwards(start, filename, stop_at=None)` - первый
+    `filename` вверх по дереву; останавливается на директории с
+    `stop_at`-маркером (по умолчанию - `PROJECT_MARKERS`). Перенесён из
+    `per_test_files` (там оставлен реэкспорт для совместимости).
+- **`tquality_core.models.jsonc_settings_source.JsoncConfigSettingsSource`**
+  - публичный pydantic-settings источник, парсящий jsonc/json5
+  (комментарии и висячие запятые). Вынесен из `config.py` (был приватный
+  `_JsoncConfigSettingsSource`), реэкспортирован на верхний уровень
+  `tquality_core`, добавлен в `__all__` - чтобы дочерние пакеты
+  (`tquality-py-selenium`, `tquality-py-appium`) переиспользовали его в
+  `settings_customise_sources` своих `*Config`.
 
 ### Изменено
 
+- **Цепочка `config.json5` останавливается на границе проекта, а не на
+  корне ФС.** Раньше при отсутствии uv-workspace (`find_project_root`
+  возвращал `None`) обход поднимался до корня файловой системы и мог
+  подхватить чужие `config.json5` из домашней директории и выше. Теперь
+  `PathUtils.resolve_path_chain` по умолчанию стопает на корне workspace,
+  иначе на корне проекта (ближайшая директория с одним из
+  `PathUtils.PROJECT_MARKERS` - `pyproject.toml` / `setup.py` /
+  `requirements.txt`), иначе на стартовой директории - до корня ФС обход
+  не доходит.
+- **Минимальная версия `pydantic-settings` поднята до `>=2.2`** (была
+  `>=2.0`). `JsoncConfigSettingsSource` наследует `JsonConfigSettingsSource`,
+  который появился только в pydantic-settings 2.2.0 - на `2.0` / `2.1`
+  импорт падал. Выявлено прогоном тестов на нижней границе версий.
+- **`pytest` - runtime-зависимость (`pytest>=8.0`), а не dev.** Пакет
+  поставляет pytest11-плагин (`tquality_core.plugins.per_test_files`),
+  поэтому pytest нужен в рантайме. Точечный пин `==9.1.0` снят в пользу
+  нижней границы (точный пин в библиотеке диктовал бы потребителю версию
+  его собственного тест-раннера); дубликат из `dev` убран.
+- **`per_test_files` переехал в пакет `tquality_core.plugins`**
+  (`tquality_core.plugins.per_test_files`; pytest11-entry-point и импорты
+  верхнего уровня `tquality_core` обновлены, публичные имена не менялись).
+- **Плагин `per_test_files` упрощён.** Teardown rebuilder'ов теперь
+  регистрируется через нативный `item.addfinalizer` (pytest вызывает их
+  в обратном порядке и **поднимает их ошибки**, а не глотает молча) -
+  убраны второй хук `pytest_runtest_teardown` и ручное складывание
+  teardown'ов в атрибут `item`. Рекомендуемый паттерн rebuilder'а смещает
+  поиск через `PathUtils.override_config_search_dir(test_dir)` вместо
+  `os.chdir`.
 - **JSON-схема конфига генерируется в диалекте JSON Schema draft-07**
   (был draft 2020-12). `generate_schema` выставляет
   `$schema: http://json-schema.org/draft-07/schema#`. Контент схемы не
@@ -58,6 +118,18 @@
   `model_validate`), а не прямыми `__init__`-kwargs, поэтому строгие
   проверки на практике не срабатывают - служат сеткой безопасности на
   опечатки в именах полей при ручном конструировании.
+
+### Удалено
+
+- **Поле верхнего уровня `BaseConfig.default_timeout`** - перенесено в
+  блок `waiter` (`waiter.timeout`). Ломающее изменение: в `config.json5`
+  / env / конструкторе вместо `default_timeout: 10.0` используйте
+  `waiter: { timeout: 10.0 }` (env - `TEST_WAITER__TIMEOUT`).
+  Downstream-пакеты (`tquality-py-selenium`, `tquality-py-appium`),
+  читавшие `config.default_timeout`, должны перейти на
+  `config.waiter.timeout`.
+- **`per_test_files.cwd`** - удалён `os.chdir`-контекст-менеджер. Замена -
+  тред-безопасный `PathUtils.override_config_search_dir(path)`.
 
 ## [0.1.11] - 2026-05-31
 

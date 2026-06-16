@@ -20,16 +20,13 @@ import time
 from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 if TYPE_CHECKING:
-    from tquality_core.config import BaseConfig
+    from tquality_core.models import BaseConfig
     from tquality_core.services.logger import Logger
 
 
 class WaitTimeoutError(TimeoutError):
     """Поднимается `Waiter.until(raise_on_timeout=True)`, если конкретный
     класс исключения не задан ни в `default_raise_cls`, ни per-call."""
-
-
-_DEFAULT_POLL_INTERVAL = 0.5
 
 
 class Waiter:
@@ -62,8 +59,9 @@ class Waiter:
     ) -> bool:
         """Опрашивать `condition()` пока truthy либо не истечёт `timeout`.
 
-        - `timeout` (сек) - default из `config.default_timeout`.
-        - `poll_interval` (сек) - пауза между опросами; default - 0.5s.
+        - `timeout` (сек) - default из `config.waiter.timeout`.
+        - `poll_interval` (сек) - пауза между опросами; default из
+          `config.waiter.poll_interval`.
         - `raise_on_timeout`:
           - `False` (default) - вернуть `False` на таймаут.
           - `True` - поднять `default_raise_cls` (задан в init).
@@ -72,8 +70,12 @@ class Waiter:
         - `ignored_exceptions` - типы, считающиеся «ещё не готово»;
           по умолчанию - те, что переданы в init. Остальные пробрасываются.
         """
-        t = timeout if timeout is not None else self._config.default_timeout
-        poll = poll_interval if poll_interval is not None else _DEFAULT_POLL_INTERVAL
+        t = timeout if timeout is not None else self._config.waiter.timeout
+        poll = (
+            poll_interval
+            if poll_interval is not None
+            else self._config.waiter.poll_interval
+        )
         ignored = tuple(ignored_exceptions) if ignored_exceptions is not None else self._ignored
         log_msg = message or "condition"
         self._log.info("Waiting (%.1fs): %s", t, log_msg)

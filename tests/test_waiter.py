@@ -7,11 +7,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from tquality_core import Waiter, WaitTimeoutError
+from tquality_core import Waiter, WaiterConfig, WaitTimeoutError
 
 
 class _DummyConfig:
-    default_timeout = 1.0
+    waiter = WaiterConfig(timeout=1.0)
 
 
 def _make_waiter(
@@ -139,7 +139,7 @@ def test_message_passes_to_log_and_exception() -> None:
 
 def test_timeout_uses_config_default() -> None:
     class _C:
-        default_timeout = 0.05
+        waiter = WaiterConfig(timeout=0.05)
 
     logger = Mock()
     w = Waiter(
@@ -151,6 +151,27 @@ def test_timeout_uses_config_default() -> None:
     elapsed = time.monotonic() - started
     # Within 100ms of the configured 50ms
     assert 0.04 <= elapsed <= 0.5
+
+
+def test_poll_interval_uses_config_default() -> None:
+    class _C:
+        waiter = WaiterConfig(timeout=0.25, poll_interval=0.1)
+
+    logger = Mock()
+    w = Waiter(
+        config=_C(),  # type: ignore[arg-type]
+        logger_resolver=lambda: logger,
+    )
+    calls: list[float] = []
+
+    def cond() -> bool:
+        calls.append(time.monotonic())
+        return False
+
+    # No per-call poll_interval - falls back to config.waiter.poll_interval.
+    w.until(cond)
+    # 0.25s budget at 0.1s interval - expect roughly 3 polls (0, 0.1, 0.2).
+    assert 2 <= len(calls) <= 4
 
 
 def test_poll_interval_controls_polling_frequency() -> None:
