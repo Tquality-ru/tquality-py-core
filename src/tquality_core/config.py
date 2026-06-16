@@ -6,6 +6,9 @@
 """
 from __future__ import annotations
 
+import contextvars
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -39,38 +42,75 @@ class _JsoncConfigSettingsSource(JsonConfigSettingsSource):
 CONFIG_FILENAME = "config.json5"
 
 
-def _find_project_root() -> Path | None:
-    """Найти корень workspace, поднимаясь по родительским директориям."""
-    current = Path.cwd().resolve()
-    for parent in (current, *current.parents):
-        pyproject = parent / "pyproject.toml"
-        if pyproject.exists() and "tool.uv.workspace" in pyproject.read_text(encoding="utf-8"):
-            return parent
-    return None
+class ConfigSearchDir:
+    """Стартовая директория поиска конфигов + хелперы обхода дерева.
 
-
-def _collect_config_chain(start: Path, stop: Path | None) -> list[Path]:
-    """Собрать `config.json` от start к stop (включительно).
-
-    Возвращает список путей, упорядоченный от самого специфичного (ближнего к
-    start) до самого общего (в stop). Пропускает директории без config.json.
-    Останавливается при достижении stop или корня файловой системы.
+    Директория хранится в `ContextVar`, поэтому переопределение изолировано
+    per-context: каждый поток (`--threadpool`) и каждый процесс (`-n`/xdist)
+    видит своё значение, а конкурентные сессии не дерутся за общий `os.chdir`.
+    Так per-test пересборка конфигов из директории теста делается без смены
+    глобального CWD. По умолчанию (`None`) берётся `Path.cwd()`.
     """
-    found: list[Path] = []
-    current = start.resolve()
-    stop_resolved = stop.resolve() if stop is not None else None
 
-    while True:
-        candidate = current / CONFIG_FILENAME
-        if candidate.exists():
-            found.append(candidate)
-        if stop_resolved is not None and current == stop_resolved:
-            break
-        if current.parent == current:
-            break
-        current = current.parent
+    _current: contextvars.ContextVar[Path | None] = contextvars.ContextVar(
+        "_tquality_search_start_dir", default=None,
+    )
 
-    return found
+    @classmethod
+    def current(cls) -> Path:
+        """Текущая стартовая директория поиска (по контексту или CWD)."""
+        return cls._current.get() or Path.cwd()
+
+    @classmethod
+    @contextmanager
+    def override(cls, path: Path | str | None) -> Iterator[None]:
+        """Временно сделать `path` стартовой директорией поиска конфигов.
+
+        Тред-безопасная замена `os.chdir`: значение живёт в `ContextVar`,
+        поэтому влияет только на текущий контекст. `None` возвращает к CWD.
+        """
+        resolved = Path(path).resolve() if path is not None else None
+        token = cls._current.set(resolved)
+        try:
+            yield
+        finally:
+            cls._current.reset(token)
+
+    @staticmethod
+    def find_project_root() -> Path | None:
+        """Найти корень workspace, поднимаясь от `current()` к корню ФС."""
+        current = ConfigSearchDir.current().resolve()
+        for parent in (current, *current.parents):
+            pyproject = parent / "pyproject.toml"
+            if pyproject.exists() and "tool.uv.workspace" in pyproject.read_text(
+                encoding="utf-8",
+            ):
+                return parent
+        return None
+
+    @staticmethod
+    def collect_config_chain(start: Path, stop: Path | None) -> list[Path]:
+        """Собрать `config.json` от start к stop (включительно).
+
+        Возвращает список путей, упорядоченный от самого специфичного (ближнего
+        к start) до самого общего (в stop). Пропускает директории без
+        config.json. Останавливается при достижении stop или корня ФС.
+        """
+        found: list[Path] = []
+        current = start.resolve()
+        stop_resolved = stop.resolve() if stop is not None else None
+
+        while True:
+            candidate = current / CONFIG_FILENAME
+            if candidate.exists():
+                found.append(candidate)
+            if stop_resolved is not None and current == stop_resolved:
+                break
+            if current.parent == current:
+                break
+            current = current.parent
+
+        return found
 
 
 class BaseConfig(BaseSettings):
@@ -144,8 +184,10 @@ class BaseConfig(BaseSettings):
             init_settings, env_settings, dotenv_settings,
         ]
 
-        project_root = _find_project_root()
-        config_chain = _collect_config_chain(Path.cwd(), project_root)
+        project_root = ConfigSearchDir.find_project_root()
+        config_chain = ConfigSearchDir.collect_config_chain(
+            ConfigSearchDir.current(), project_root,
+        )
 
         # Цепочка упорядочена от специфичного к общему.
         # pydantic-settings отдает приоритет источникам, идущим раньше,
