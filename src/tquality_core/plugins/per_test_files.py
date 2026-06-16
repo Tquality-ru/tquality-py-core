@@ -42,6 +42,7 @@ find_upwards = PathUtils.find_upwards
 Rebuilder = Callable[[Path], "Callable[[], None] | None"]
 
 _rebuilders: list[Rebuilder] = []
+_TEARDOWN_ATTR = "_tquality_per_test_teardowns"
 
 
 def register_per_test_rebuilder(rebuilder: Rebuilder) -> None:
@@ -61,12 +62,26 @@ def register_per_test_rebuilder(rebuilder: Rebuilder) -> None:
 
 def pytest_runtest_setup(item: Any) -> None:
     test_dir = Path(str(item.path)).resolve().parent
+    teardowns: list[Callable[[], None]] = []
     for rebuilder in _rebuilders:
         teardown = rebuilder(test_dir)
         if teardown is not None:
-            # pytest вызовет финализаторы в обратном порядке на teardown
-            # и поднимет их ошибки (а не проглотит молча).
-            item.addfinalizer(teardown)
+            teardowns.append(teardown)
+    # Teardown'ы складываем на сам item и проигрываем в `pytest_runtest_teardown`.
+    # `item.addfinalizer` здесь нельзя: на этапе setup-хука item ещё не на стеке
+    # pytest-овского SetupState, и регистрация финализатора падает ассертом.
+    setattr(item, _TEARDOWN_ATTR, teardowns)
+
+
+def pytest_runtest_teardown(item: Any) -> None:
+    teardowns: list[Callable[[], None]] = getattr(item, _TEARDOWN_ATTR, [])
+    for teardown in reversed(teardowns):
+        try:
+            teardown()
+        except Exception:  # noqa: BLE001 - teardown не должен ронять прогон
+            pass
+    if hasattr(item, _TEARDOWN_ATTR):
+        delattr(item, _TEARDOWN_ATTR)
 
 
 __all__ = [

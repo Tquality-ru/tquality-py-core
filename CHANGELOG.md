@@ -3,6 +3,22 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.13] - 2026-06-16
+
+### Исправлено
+
+- **`per_test_files`: teardown rebuilder'ов снова проигрывается в
+  `pytest_runtest_teardown`, а не через `item.addfinalizer`.** В 0.1.12
+  плагин регистрировал teardown через `item.addfinalizer` прямо в
+  `pytest_runtest_setup`, но на этом этапе item ещё не на стеке
+  pytest-овского `SetupState` - поэтому `addfinalizer` падал ассертом
+  (`node in self.stack`) при первом же зарегистрированном rebuilder'е, то
+  есть в любом реальном прогоне с `Services.setup()` (grid/девайс-тесты).
+  Возвращён робастный двух-хуковый подход: на setup teardown'ы
+  складываются на item, на teardown проигрываются в обратном порядке с
+  глушением исключений. Затрагивает downstream `tquality-py-selenium` /
+  `tquality-py-appium` (их per-test пересборку конфигов).
+
 ## [0.1.12] - 2026-06-16
 
 ### Добавлено

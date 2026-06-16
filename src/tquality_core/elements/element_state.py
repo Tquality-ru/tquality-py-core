@@ -25,6 +25,7 @@ def has_loaded(el) -> bool:
 submit = element_factory.button(..., state=has_loaded)
 ```
 """
+
 from __future__ import annotations
 
 from enum import Enum
