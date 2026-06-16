@@ -47,8 +47,10 @@
 - **Подключён ruff** (dev-зависимость `ruff>=0.14.0`, секции
   `[tool.ruff]` / `[tool.ruff.lint]`: `line-length = 120`, правила
   `E`, `W`, `F`, `I`, `N`). Импорты по всему пакету отсортированы под
-  ruff isort. `mypy` переведён с явного `files = [...]` на
-  `exclude` скрытых директорий и `__pycache__`.
+  ruff isort. `mypy` теперь сканирует весь репозиторий (`files = ["."]`)
+  с `exclude` скрытых директорий и `__pycache__` - bare `uv run mypy`
+  (как его зовёт pre-commit хук) снова получает цель проверки, а новые
+  модули в корне покрываются автоматически.
 - **Включён `pydantic.mypy`-плагин** (`plugins = ["pydantic.mypy"]`,
   поставляется с `pydantic`) с секцией `[tool.pydantic-mypy]`:
   `init_forbid_extra = true` и `warn_required_dynamic_aliases = true`.
