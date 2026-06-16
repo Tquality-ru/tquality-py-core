@@ -29,7 +29,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from tquality_core.config import BaseConfig, CONFIG_FILENAME
+from tquality_core.config import CONFIG_FILENAME, BaseConfig
 from tquality_core.schema import SCHEMA_URL, write_schema_file
 
 

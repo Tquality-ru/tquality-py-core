@@ -8,7 +8,7 @@
 По умолчанию `until()` НЕ кидает исключение на таймаут - возвращает
 `bool`. Для жёсткого падения - `raise_on_timeout=True` (поднимется
 `default_raise_cls`, заданный при создании waiter'а) либо передайте
-собственный класс (`raise_on_timeout=MyError`).
+собственный класс (`raise_on_timeout=AssertionError`).
 
 Гасятся только те исключения, что переданы в `ignored_exceptions`
 (в init либо per-call). Остальные пробрасываются - пользовательский
@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 if TYPE_CHECKING:
     from tquality_core.config import BaseConfig

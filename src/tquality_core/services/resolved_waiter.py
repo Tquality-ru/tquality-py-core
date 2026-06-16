@@ -15,7 +15,7 @@
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 if TYPE_CHECKING:
     from tquality_core.services.waiter import Waiter

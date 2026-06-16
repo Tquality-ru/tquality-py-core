@@ -27,7 +27,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-
 _log = logging.getLogger(__name__)
 
 MIME_TYPE = "video/webm"
