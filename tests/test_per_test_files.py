@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from tquality_core import PathUtils
 from tquality_core.plugins import per_test_files as ptf
 
 
@@ -69,7 +70,7 @@ def test_teardowns_run_in_reverse_order(tmp_path: Path) -> None:
     assert order == [3, 2, 1]
 
 
-def test_rebuilder_returning_none_adds_no_teardown(tmp_path: Path) -> None:
+def test_rebuilder_returning_none_adds_no_extra_teardown(tmp_path: Path) -> None:
     ptf.register_per_test_rebuilder(lambda _test_dir: None)
 
     test_file = tmp_path / "test_y.py"
@@ -77,8 +78,23 @@ def test_rebuilder_returning_none_adds_no_teardown(tmp_path: Path) -> None:
     item = _FakeItem(test_file)
 
     ptf.pytest_runtest_setup(item)
-    assert getattr(item, ptf._TEARDOWN_ATTR) == []
+    # Только сброс search_dir; teardown'а от rebuilder'а (вернул None) нет.
+    assert len(getattr(item, ptf._TEARDOWN_ATTR)) == 1
     ptf.pytest_runtest_teardown(item)  # без ошибок
+
+
+def test_search_dir_set_to_test_dir_and_reset(tmp_path: Path) -> None:
+    """Плагин смещает config_search_dir на директорию теста и снимает на teardown."""
+    before = PathUtils.config_search_dir()
+    test_file = tmp_path / "test_s.py"
+    test_file.write_text("", encoding="utf-8")
+    item = _FakeItem(test_file)
+
+    ptf.pytest_runtest_setup(item)
+    assert PathUtils.config_search_dir() == tmp_path.resolve()
+
+    ptf.pytest_runtest_teardown(item)
+    assert PathUtils.config_search_dir() == before
 
 
 def test_teardown_exception_is_swallowed(tmp_path: Path) -> None:

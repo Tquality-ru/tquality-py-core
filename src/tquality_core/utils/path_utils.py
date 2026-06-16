@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import contextvars
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import ClassVar
@@ -52,6 +52,23 @@ class PathUtils:
         return cls._search_dir.get() or Path.cwd()
 
     @classmethod
+    def use_config_search_dir(
+        cls,
+        path: Path | str | None,
+    ) -> Callable[[], None]:
+        """Сделать `path` стартовой директорией поиска конфигов; вернуть
+        callable, восстанавливающий прежнее значение.
+
+        Не контекст-менеджер - для случаев, где `set` и `reset` происходят в
+        разных местах (например, pytest `setup`/`teardown`-хуки). Значение
+        живёт в `ContextVar`, поэтому изменение видно только в текущем
+        контексте. `None` возвращает к CWD.
+        """
+        resolved = Path(path).resolve() if path is not None else None
+        token = cls._search_dir.set(resolved)
+        return lambda: cls._search_dir.reset(token)
+
+    @classmethod
     @contextmanager
     def override_config_search_dir(
         cls,
@@ -62,12 +79,11 @@ class PathUtils:
         Тред-безопасная замена `os.chdir`: значение живёт в `ContextVar`,
         поэтому влияет только на текущий контекст. `None` возвращает к CWD.
         """
-        resolved = Path(path).resolve() if path is not None else None
-        token = cls._search_dir.set(resolved)
+        reset = cls.use_config_search_dir(path)
         try:
             yield
         finally:
-            cls._search_dir.reset(token)
+            reset()
 
     @staticmethod
     def find_project_root(start: Path | None = None) -> Path | None:

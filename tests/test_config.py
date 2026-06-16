@@ -2,15 +2,32 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
 
 from tquality_core import BaseConfig, PathUtils
 
+SearchDir = Callable[[Path], None]
 
-def test_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.chdir(tmp_path)
+
+@pytest.fixture
+def search_dir() -> Iterator[SearchDir]:
+    """Параллельно-безопасно нацеливает разрешение конфигов на директорию
+    (через `ContextVar`), в отличие от глобального `monkeypatch`/`chdir`."""
+    resets: list[Callable[[], None]] = []
+
+    def _set(path: Path) -> None:
+        resets.append(PathUtils.use_config_search_dir(path))
+
+    yield _set
+    for reset in reversed(resets):
+        reset()
+
+
+def test_defaults(tmp_path: Path, search_dir: SearchDir) -> None:
+    search_dir(tmp_path)
     cfg = BaseConfig()
     assert cfg.base_url == "http://localhost"
     assert cfg.waiter.timeout == 10.0
@@ -20,18 +37,18 @@ def test_defaults(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_constructor_overrides_defaults(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
-    monkeypatch.chdir(tmp_path)
+    search_dir(tmp_path)
     cfg = BaseConfig(base_url="https://example.com", waiter={"timeout": 5.0})
     assert cfg.base_url == "https://example.com"
     assert cfg.waiter.timeout == 5.0
 
 
 def test_subclass_adds_fields(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
-    monkeypatch.chdir(tmp_path)
+    search_dir(tmp_path)
 
     class MyConfig(BaseConfig):
         custom_field: str = "default-value"
@@ -55,13 +72,13 @@ def _write_config(path: Path, data: dict[str, object]) -> None:
 
 
 def test_resolves_from_workspace_root_when_cwd_has_no_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
     sub = tmp_path / "tests"
     sub.mkdir()
-    monkeypatch.chdir(sub)
+    search_dir(sub)
 
     cfg = BaseConfig()
 
@@ -69,7 +86,7 @@ def test_resolves_from_workspace_root_when_cwd_has_no_config(
 
 
 def test_more_specific_config_wins_over_less_specific(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {
@@ -78,7 +95,7 @@ def test_more_specific_config_wins_over_less_specific(
     })
     sub = tmp_path / "tests" / "integration"
     _write_config(sub / "config.json5", {"base_url": "https://integration"})
-    monkeypatch.chdir(sub)
+    search_dir(sub)
 
     cfg = BaseConfig()
 
@@ -89,7 +106,7 @@ def test_more_specific_config_wins_over_less_specific(
 
 
 def test_three_level_chain_resolves_each_field_from_closest_config(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {
@@ -103,7 +120,7 @@ def test_three_level_chain_resolves_each_field_from_closest_config(
     })
     leaf = tmp_path / "tests" / "integration" / "critical"
     _write_config(leaf / "config.json5", {"log_dir": "critical-logs"})
-    monkeypatch.chdir(leaf)
+    search_dir(leaf)
 
     cfg = BaseConfig()
 
@@ -115,11 +132,11 @@ def test_three_level_chain_resolves_each_field_from_closest_config(
 
 
 def test_env_vars_override_config_files(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
-    monkeypatch.chdir(tmp_path)
+    search_dir(tmp_path)
     monkeypatch.setenv("TEST_BASE_URL", "https://from-env")
 
     cfg = BaseConfig()
@@ -128,11 +145,11 @@ def test_env_vars_override_config_files(
 
 
 def test_constructor_args_override_everything(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
-    monkeypatch.chdir(tmp_path)
+    search_dir(tmp_path)
     monkeypatch.setenv("TEST_BASE_URL", "https://from-env")
 
     cfg = BaseConfig(base_url="https://explicit")
@@ -141,7 +158,7 @@ def test_constructor_args_override_everything(
 
 
 def test_jsonc_comments_and_trailing_commas_supported(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     """config.json5 может содержать комментарии и висячие запятые (jsonc/json5)."""
     _make_workspace(tmp_path)
@@ -158,7 +175,7 @@ def test_jsonc_comments_and_trailing_commas_supported(
         """,
         encoding="utf-8",
     )
-    monkeypatch.chdir(tmp_path)
+    search_dir(tmp_path)
 
     cfg = BaseConfig()
 
@@ -167,7 +184,7 @@ def test_jsonc_comments_and_trailing_commas_supported(
 
 
 def test_chain_stops_at_workspace_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     """config.json5 выше workspace root не должен читаться."""
     outer = tmp_path / "outer"
@@ -179,14 +196,14 @@ def test_chain_stops_at_workspace_root(
     _make_workspace(workspace)
     _write_config(workspace / "config.json5", {"base_url": "https://workspace"})
 
-    monkeypatch.chdir(workspace)
+    search_dir(workspace)
     cfg = BaseConfig()
 
     assert cfg.base_url == "https://workspace"
 
 
 def test_conda_environment_marks_workspace_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     """`environment.yml` (conda) - тоже маркер корня workspace: config выше
     него не читается, config в корне - читается."""
@@ -202,7 +219,7 @@ def test_conda_environment_marks_workspace_root(
     _write_config(workspace / "config.json5", {"base_url": "https://conda-root"})
     leaf = workspace / "tests" / "e2e"
     _write_config(leaf / "config.json5", {"highlight_elements": True})
-    monkeypatch.chdir(leaf)
+    search_dir(leaf)
 
     cfg = BaseConfig()
 
@@ -212,7 +229,7 @@ def test_conda_environment_marks_workspace_root(
 
 
 def test_poetry_pyproject_marks_workspace_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     """`pyproject.toml` с `[tool.poetry]` - маркер корня workspace."""
     outer = tmp_path / "outer"
@@ -227,7 +244,7 @@ def test_poetry_pyproject_marks_workspace_root(
     _write_config(workspace / "config.json5", {"base_url": "https://poetry-root"})
     leaf = workspace / "tests"
     _write_config(leaf / "config.json5", {"highlight_elements": True})
-    monkeypatch.chdir(leaf)
+    search_dir(leaf)
 
     cfg = BaseConfig()
 
@@ -236,7 +253,7 @@ def test_poetry_pyproject_marks_workspace_root(
 
 
 def test_chain_stops_at_project_root_without_workspace(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, search_dir: SearchDir,
 ) -> None:
     """Без uv-workspace цепочка стопает на корне проекта (`pyproject.toml`),
     а не уходит до корня ФС - config.json5 выше проекта не читается."""
@@ -252,26 +269,24 @@ def test_chain_stops_at_project_root_without_workspace(
     _write_config(project / "config.json5", {"base_url": "https://project"})
     sub = project / "tests"
     sub.mkdir()
-    monkeypatch.chdir(sub)
+    search_dir(sub)
 
     cfg = BaseConfig()
 
     assert cfg.base_url == "https://project"
 
 
-def test_override_config_search_dir_redirects_resolution(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """`PathUtils.override_config_search_dir` смещает поиск конфигов без chdir."""
+def test_override_config_search_dir_redirects_resolution(tmp_path: Path) -> None:
+    """`PathUtils.override_config_search_dir` смещает поиск конфигов на
+    указанную директорию (без chdir)."""
     _make_workspace(tmp_path)
     leaf = tmp_path / "tests" / "android"
     _write_config(leaf / "config.json5", {"base_url": "https://android"})
+    empty = tmp_path / "tests" / "ios"  # без своего config.json5
+    empty.mkdir(parents=True)
 
-    # CWD - корень workspace (его config отсутствует), но поиск стартует из leaf.
-    monkeypatch.chdir(tmp_path)
     with PathUtils.override_config_search_dir(leaf):
-        cfg = BaseConfig()
-
-    assert cfg.base_url == "https://android"
-    # Вне контекста - снова от CWD, leaf-config не виден.
-    assert BaseConfig().base_url == "http://localhost"
+        assert BaseConfig().base_url == "https://android"
+    # Другая директория без config.json5 в цепочке - дефолт.
+    with PathUtils.override_config_search_dir(empty):
+        assert BaseConfig().base_url == "http://localhost"
