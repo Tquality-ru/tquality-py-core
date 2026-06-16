@@ -87,7 +87,7 @@ def generate_schema(
     пакеты передают свой `schema_url` (см. `build_schema_url`).
     """
     schema: dict[str, Any] = config_cls.model_json_schema()
-    schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+    schema["$schema"] = "http://json-schema.org/draft-07/schema#"
     schema["$id"] = schema_url if schema_url is not None else SCHEMA_URL
     return schema
 

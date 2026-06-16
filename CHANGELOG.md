@@ -3,6 +3,95 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.12] - 2026-06-16
+
+### Добавлено
+
+- **`tquality_core.config.ConfigSearchDir`** - стартовая директория
+  поиска конфигов на базе `ContextVar` плюс хелперы обхода дерева
+  (реэкспортирован на верхний уровень `tquality_core`, добавлен в
+  `__all__`).
+  - `ConfigSearchDir.override(path)` - контекст-менеджер, временно
+    делающий `path` стартовой директорией поиска `config.json5`;
+    `None` возвращает к `Path.cwd()`. Тред- и процесс-безопасная
+    замена `os.chdir`: значение живёт в `ContextVar`, поэтому каждый
+    поток (`--threadpool`) и процесс (`-n` / xdist) видит своё, а
+    конкурентные сессии не дерутся за общий CWD. Так per-test
+    пересборка конфигов из директории теста делается без смены
+    глобального CWD.
+  - `ConfigSearchDir.current()` - текущая стартовая директория (из
+    контекста или `Path.cwd()`).
+  - `ConfigSearchDir.find_project_root()` / `collect_config_chain(...)`
+    - обход вверх до корня workspace и сбор цепочки `config.json5`
+    (ранее приватные `_find_project_root` / `_collect_config_chain`
+    уровня модуля, теперь методы класса). `BaseConfig` строит цепочку
+    конфигов от `ConfigSearchDir.current()`, а не от `Path.cwd()`
+    напрямую.
+
+### Изменено
+
+- **JSON-схема конфига генерируется в диалекте JSON Schema draft-07**
+  (был draft 2020-12). `generate_schema` выставляет
+  `$schema: http://json-schema.org/draft-07/schema#`. Контент схемы не
+  использует 2020-12-специфичных конструкций, так что меняется только
+  объявленный диалект. Причина: meta-схема draft 2020-12 опирается на
+  `$dynamicRef` / `$dynamicAnchor`, который часть IDE (JetBrains)
+  резолвят неверно и начинают валидировать значения аннотаций
+  (`default`) как подсхемы - отсюда ложные «Required one of: boolean,
+  object. Actual: integer» на не-boolean дефолтах. draft-07 не содержит
+  `$dynamicRef` и одинаково поддерживается всеми валидаторами; на
+  JSON5-конфиги диалект не влияет (инстанс парсится в модель данных до
+  валидации). Затрагивает схемы downstream-пакетов
+  (`tquality-py-selenium`, `tquality-py-appium`), генерируемых через
+  ядро.
+- **Подключён ruff** (dev-зависимость `ruff>=0.14.0`, секции
+  `[tool.ruff]` / `[tool.ruff.lint]`: `line-length = 120`, правила
+  `E`, `W`, `F`, `I`, `N`). Импорты по всему пакету отсортированы под
+  ruff isort. `mypy` переведён с явного `files = [...]` на
+  `exclude` скрытых директорий и `__pycache__`.
+- **Включён `pydantic.mypy`-плагин** (`plugins = ["pydantic.mypy"]`,
+  поставляется с `pydantic`) с секцией `[tool.pydantic-mypy]`:
+  `init_forbid_extra = true` и `warn_required_dynamic_aliases = true`.
+  Модели наполняются через десериализацию (settings-источники,
+  `model_validate`), а не прямыми `__init__`-kwargs, поэтому строгие
+  проверки на практике не срабатывают - служат сеткой безопасности на
+  опечатки в именах полей при ручном конструировании.
+
+## [0.1.11] - 2026-05-31
+
+### Изменено
+
+- **`_Step` переименован в публичный `Step`** (`tquality_core.services.logger`).
+  Класс шага передаётся в step-хуки и доступен через
+  `Logger.current_step` / `Logger.active_step_stack`, поэтому стал
+  частью публичного API. Добавлены публичные геттеры `Step.title` и
+  `Step.level` (раньше доступ был только к приватным `_title` / `_level`).
+  Обновлены типизации `StepEnterHook` / `StepExitHook` (`"_Step"` →
+  `"Step"`), документация хуков и фабрики `step(...)`. `Step`,
+  `StepEnterHook`, `StepExitHook` реэкспортированы на верхний уровень
+  `tquality_core` и добавлены в `__all__`.
+
+## [0.1.10] - 2026-05-31
+
+### Добавлено
+
+- **Хуки входа/выхода из шага `Logger`** - `StepEnterHook` и
+  `StepExitHook` (`tquality_core.services.logger`, реэкспортированы на
+  верхний уровень `tquality_core`).
+  - `Logger.register_step_enter_hook(hook)` - колбэк `(step,)`,
+    вызывается при входе в любой шаг уже после push в стек (внутри
+    `logger.current_step is step`). Возвращает unregister-callable.
+  - `Logger.register_step_exit_hook(hook)` - колбэк
+    `(step, exc_type, exc_val)`, вызывается при выходе из шага до pop
+    из стека; по `exc_type` можно судить, упал ли шаг. Возвращает
+    unregister-callable.
+  - Исключения внутри хуков логируются как warning и не ломают шаг.
+  - **Стек активных шагов** per-`Logger`: свойства `Logger.current_step`
+    (innermost активный шаг или `None`) и `Logger.active_step_stack`
+    (снимок стека от outermost к innermost). Стек и хуки хранятся
+    на экземпляре `Logger`, чтобы параллельные прогоны (свой `Logger`
+    на тест) не путали «innermost step» между тестами.
+
 ## [0.1.9] - 2026-05-26
 
 ### Добавлено
