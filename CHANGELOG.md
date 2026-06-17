@@ -3,6 +3,44 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.15] - 2026-06-17
+
+### Добавлено
+
+- **Слой JS-действий.** Базовый сервис `BaseJSActions`
+  (`tquality_core.services.base_js_actions`) хранит sync/async executor'ы,
+  читает скрипт из `str` (буквальный JS) / `Path` / `Traversable` (ресурс
+  пакета) через `_to_source` и исполняет его; подклассы переопределяют
+  `_prefix_args`, чтобы подставить неявные аргументы перед пользовательскими.
+  - `JSActions` (`tquality_core.services.js_actions`) - page/global-scope:
+    13 типизированных методов (alert'ы, открытие вкладок/окон, скроллы,
+    `is_page_loaded`, поиск по XPath и точке и т.д.). Дефолты бесконечного
+    скролла берёт из блока `waiter` переданного `BaseConfig`.
+  - `JsElementActions` (`tquality_core.services.js_element_actions`) -
+    element-scope: первым аргументом скрипта подставляет текущий элемент
+    (`element_getter`), 21 метод (`click`/`hover`/`set_focus`, `highlight`,
+    `set_value`, `set_attribute`, чтение текста/xpath/css/чекбокса/combobox,
+    скроллы к элементу, `expand_shadow_root` и др.).
+  - **`set_value` - надёжный сеттер:** на JS-стороне берёт нативный сеттер
+    `value` с прототипа элемента (обходит переопределение React/Vue), на
+    `contenteditable` пишет `textContent`, иначе - запасное присваивание;
+    затем эмитит `input` и `change`. Тип элемента определяется в JS - снаружи
+    ничего указывать не нужно.
+  - **`get_combobox_options`** - тексты всех опций combobox, пара к
+    `select_combobox_value_by_text`.
+- **Реестры JS-скриптов** `CommonJSScripts` (document/global-scope, 13 записей)
+  и `CommonElementJSScripts` (element-scope, 21 запись) в
+  `tquality_core.models.assets.js_scripts` - значения это `Traversable`-пути к
+  `.js`-файлам, содержимое читается через `.read_text()`.
+- **JS-ассеты** в `tquality_core/assets/js_scripts/{document,element}/`
+  (13 + 21 файл), портированы из aquality-selenium-dotnet с допиленной
+  параметризацией и JSDoc-типами; упаковываются в wheel.
+- **Тесты JS-слоя** (`tests/test_js_scripts.py`, `tests/test_base_js_actions.py`):
+  целостность реестров (каждый `.js` зарегистрирован и наоборот; каждый
+  зарегистрированный скрипт покрыт методом-обёрткой) с негативными тестами на
+  срабатывание проверок, и диспетчеризация `execute_script` для своего
+  литерала / своего `Path` / async-роутинга / порядка префиксных аргументов.
+
 ## [0.1.14] - 2026-06-16
 
 ### Изменено
