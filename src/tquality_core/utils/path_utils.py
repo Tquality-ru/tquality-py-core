@@ -6,6 +6,8 @@ from __future__ import annotations
 import contextvars
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from importlib.resources import files
+from importlib.resources.abc import Traversable
 from pathlib import Path
 from typing import ClassVar
 
@@ -40,6 +42,10 @@ class PathUtils:
         ("environment.yml", None),
         ("environment.yaml", None),
     )
+
+    __CORE_PACKAGE = "tquality_core"
+    __ASSETS_DIR: ClassVar[Traversable] = files(__CORE_PACKAGE).joinpath("assets")
+    __JS_SCRIPTS_DIR: ClassVar[Traversable] = __ASSETS_DIR.joinpath("js_scripts")
 
     _search_dir: contextvars.ContextVar[Path | None] = contextvars.ContextVar(
         "_tquality_config_search_dir",
@@ -84,6 +90,16 @@ class PathUtils:
             yield
         finally:
             reset()
+
+    @classmethod
+    def get_assets_dir(cls) -> Traversable:
+        """Получить директорию с ресурсами."""
+        return cls.__ASSETS_DIR
+
+    @classmethod
+    def get_js_scripts_dir(cls) -> Traversable:
+        """Получить директорию с js-скриптами."""
+        return cls.__JS_SCRIPTS_DIR
 
     @staticmethod
     def find_project_root(start: Path | None = None) -> Path | None:
