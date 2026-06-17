@@ -6,6 +6,7 @@
 """
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import ClassVar
 
 from pydantic import BaseModel, Field
@@ -17,6 +18,79 @@ from pydantic_settings import (
 
 from tquality_core.models.jsonc_settings_source import JsoncConfigSettingsSource
 from tquality_core.utils.path_utils import PathUtils
+
+
+class LogStream(StrEnum):
+    """Куда направлять консольный (stream) обработчик логов теста.
+
+    `stdout` / `stderr` - соответствующий стандартный поток; `none` -
+    отключить stream-обработчик вовсе (лог пишется только в файл, если
+    тот включён).
+    """
+
+    STDOUT = "stdout"
+    STDERR = "stderr"
+    NONE = "none"
+
+
+class LogLevelName(StrEnum):
+    """Уровень стандартного `logging` для обработчика лога.
+
+    Совпадает с именами уровней `logging`; значение передаётся в
+    `Handler.setLevel(...)` как есть.
+    """
+
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+
+class LoggingConfig(BaseModel):
+    """Настройки файлового и консольного обработчиков лога теста.
+
+    Каждый тест получает свой `logging.Logger` (см. `Logger`), к которому
+    подключены до двух обработчиков: файловый (пишет `<тест>.log` в
+    `log_dir`) и консольный (stdout/stderr). Уровни обработчиков
+    независимы - можно слать в консоль только `WARNING+`, а в файл -
+    весь `DEBUG`.
+
+    Драйверные пакеты расширяют этот блок дополнительными каналами
+    (например, `tquality-py-appium` добавляет `device`/`network`-логи
+    устройства), наследуясь от `LoggingConfig`.
+    """
+
+    stream: LogStream = Field(
+        default=LogStream.STDERR,
+        description=(
+            "Куда писать консольный обработчик: `stdout`, `stderr` или "
+            "`none` (отключить консольный вывод, оставить только файл)."
+        ),
+    )
+    stream_level: LogLevelName = Field(
+        default=LogLevelName.INFO,
+        description=(
+            "Минимальный уровень сообщений для консольного обработчика "
+            "(`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`). Игнорируется "
+            "при `stream: none`."
+        ),
+    )
+    file_enabled: bool = Field(
+        default=True,
+        description=(
+            "Писать ли лог теста в файл `<тест>.log` внутри `log_dir`. "
+            "Отключите, если нужен только консольный вывод."
+        ),
+    )
+    file_level: LogLevelName = Field(
+        default=LogLevelName.INFO,
+        description=(
+            "Минимальный уровень сообщений для файлового обработчика "
+            "(`DEBUG`/`INFO`/`WARNING`/`ERROR`/`CRITICAL`). Игнорируется "
+            "при `file_enabled: false`."
+        ),
+    )
 
 
 class WaiterConfig(BaseModel):
@@ -96,6 +170,15 @@ class BaseConfig(BaseSettings):
             "или абсолютный путь). Создается автоматически если отсутствует."
         ),
         min_length=1,
+    )
+    logging: LoggingConfig = Field(
+        default_factory=LoggingConfig,
+        description=(
+            "Обработчики лога теста: консольный поток (`stream`: "
+            "stdout/stderr/none) и файл `<тест>.log` в `log_dir` "
+            "(`file_enabled`), каждый со своим уровнем (`stream_level` / "
+            "`file_level`). Драйверные пакеты добавляют сюда свои каналы."
+        ),
     )
     highlight_elements: bool = Field(
         default=False,

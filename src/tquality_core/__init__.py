@@ -8,6 +8,9 @@ from tquality_core.elements.locator import Locator
 from tquality_core.models import (
     BaseConfig,
     JsoncConfigSettingsSource,
+    LoggingConfig,
+    LogLevelName,
+    LogStream,
     WaiterConfig,
 )
 from tquality_core.pages.base_form import BaseForm
@@ -48,6 +51,9 @@ __all__ = [
     "Locator",
     "Logger",
     "LogLevel",
+    "LogLevelName",
+    "LogStream",
+    "LoggingConfig",
     "OSUtils",
     "PathUtils",
     "ResolvedWaiter",

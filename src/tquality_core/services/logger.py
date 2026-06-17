@@ -12,6 +12,7 @@ import hashlib
 import logging
 import os
 import re
+import sys
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -20,11 +21,16 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 import allure
 
+from tquality_core.models.config import LoggingConfig, LogLevelName, LogStream
+
 if TYPE_CHECKING:
     from tquality_core.models import BaseConfig
 
 _LOG_FORMAT = "%(asctime)s [%(levelname)s] %(message)s"
 _LOG_DATEFMT = "%H:%M:%S"
+#: Каналы device/network пишут уже сформированные строки (со своими
+#: метками времени от ОС-источника) - без префикса logging-форматтера.
+_CHANNEL_FORMAT = "%(message)s"
 
 
 class LogLevel(enum.Enum):
@@ -207,11 +213,20 @@ class Step:
             return
         if not payload:
             return
-        allure.attach(
-            payload,
-            name=f"Screencast: {self._title}",
-            extension=provider.mime_type().split("/")[-1],
-        )
+        # Передаём attachment_type с MIME, а не только extension: иначе allure
+        # сохраняет вложение без типа и в отчёте не показывает встроенный
+        # видеоплеер (скачанный файл при этом проигрывается - тип угадывает ОС).
+        mime = provider.mime_type()
+        video_type = {
+            "video/mp4": allure.attachment_type.MP4,
+            "video/webm": allure.attachment_type.WEBM,
+            "video/ogg": allure.attachment_type.OGG,
+        }.get(mime)
+        name = f"Screencast: {self._title}"
+        if video_type is not None:
+            allure.attach(payload, name=name, attachment_type=video_type)
+        else:
+            allure.attach(payload, name=name, extension=mime.split("/")[-1])
 
     def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
@@ -264,24 +279,127 @@ class Logger:
         timestamp = self._started_at.strftime("%Y%m%d_%H%M%S")
         node_id = _get_test_node_id()
 
-        log_dir = Path(config.log_dir)
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / f"{timestamp}_{node_id}.log"
+        log_cfg: LoggingConfig = getattr(config, "logging", None) or LoggingConfig()
+        self._log_dir = Path(config.log_dir)
+        self._base_name = f"{timestamp}_{node_id}"
+        #: Вспомогательные файловые каналы (device/network логи драйвера),
+        #: создаваемые лениво через `add_file_channel`.
+        self._channels: dict[str, logging.Logger] = {}
 
-        self._logger = logging.getLogger(f"tquality.{timestamp}_{node_id}")
-        self._logger.setLevel(logging.INFO)
+        self._log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = self._log_dir / f"{self._base_name}.log"
+
+        self._logger = logging.getLogger(f"tquality.{self._base_name}")
+        # Своя цепочка обработчиков - не пропускаем в root, чтобы pytest/
+        # другие хендлеры не дублировали записи.
+        self._logger.propagate = False
+        # При совпадении node_id+timestamp (теоретически) getLogger вернёт
+        # тот же объект - чистим, чтобы не накопить дублирующие обработчики.
+        for handler in list(self._logger.handlers):
+            self._logger.removeHandler(handler)
 
         formatter = logging.Formatter(_LOG_FORMAT, datefmt=_LOG_DATEFMT)
 
-        file_handler = logging.FileHandler(log_file, encoding="utf-8")
-        file_handler.setFormatter(formatter)
-        self._logger.addHandler(file_handler)
+        if log_cfg.file_enabled:
+            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            file_handler.setLevel(log_cfg.file_level.value)
+            file_handler.setFormatter(formatter)
+            self._logger.addHandler(file_handler)
 
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(formatter)
-        self._logger.addHandler(stream_handler)
+        stream = self._resolve_stream(log_cfg.stream)
+        if stream is not None:
+            stream_handler = logging.StreamHandler(stream)
+            stream_handler.setLevel(log_cfg.stream_level.value)
+            stream_handler.setFormatter(formatter)
+            self._logger.addHandler(stream_handler)
+
+        # Уровень самого логгера - не строже самого мягкого обработчика,
+        # иначе тот не получит сообщения, которые готов пропустить.
+        self._logger.setLevel(self._root_level(log_cfg))
 
         self._logger.info("Лог запущен: %s", log_file)
+
+    @staticmethod
+    def _resolve_stream(stream: LogStream) -> Any:
+        """Поток для `StreamHandler` по `LogStream`; `None` для `NONE`."""
+        if stream == LogStream.STDOUT:
+            return sys.stdout
+        if stream == LogStream.STDERR:
+            return sys.stderr
+        return None
+
+    @staticmethod
+    def _root_level(log_cfg: LoggingConfig) -> int:
+        """Числовой уровень логгера = минимум среди включённых обработчиков.
+
+        Логгер фильтрует до обработчиков, поэтому он должен пропускать всё,
+        что готов записать хотя бы один из них. Если не включён ни один -
+        остаётся `INFO`.
+        """
+        levels: list[int] = []
+        if log_cfg.file_enabled:
+            levels.append(logging.getLevelName(log_cfg.file_level.value))
+        if log_cfg.stream != LogStream.NONE:
+            levels.append(logging.getLevelName(log_cfg.stream_level.value))
+        return min(levels) if levels else logging.INFO
+
+    @property
+    def log_dir(self) -> Path:
+        """Директория, куда пишутся файлы лога этого теста."""
+        return self._log_dir
+
+    @property
+    def base_name(self) -> str:
+        """Базовое имя файлов лога теста (`<timestamp>_<node_id>`)."""
+        return self._base_name
+
+    def add_file_channel(
+        self, name: str, level: LogLevelName | str = LogLevelName.INFO,
+    ) -> logging.Logger:
+        """Открыть вспомогательный файловый канал `<base_name>.<name>.log`.
+
+        Возвращает отдельный `logging.Logger` с собственным
+        `FileHandler` (формат - голое сообщение, см. `_CHANNEL_FORMAT`).
+        Предназначен для драйвер-специфичных коллекторов, складывающих
+        сырые потоки (например, appium device/network логи) в отдельные
+        файлы рядом с основным логом теста. Повторный вызов с тем же
+        `name` возвращает уже открытый канал.
+        """
+        existing = self._channels.get(name)
+        if existing is not None:
+            return existing
+
+        level_value = level.value if isinstance(level, LogLevelName) else level
+        self._log_dir.mkdir(parents=True, exist_ok=True)
+        channel_file = self._log_dir / f"{self._base_name}.{name}.log"
+
+        channel = logging.getLogger(f"tquality.{self._base_name}.{name}")
+        channel.propagate = False
+        channel.setLevel(level_value)
+        for handler in list(channel.handlers):
+            handler.close()
+            channel.removeHandler(handler)
+
+        handler = logging.FileHandler(channel_file, encoding="utf-8")
+        handler.setLevel(level_value)
+        handler.setFormatter(logging.Formatter(_CHANNEL_FORMAT))
+        channel.addHandler(handler)
+
+        self._channels[name] = channel
+        return channel
+
+    def close_file_channel(self, name: str) -> None:
+        """Закрыть и снять обработчики вспомогательного канала `name`.
+
+        No-op, если канал не открывался. Освобождает файловый дескриптор -
+        вызывайте при teardown коллектора.
+        """
+        channel = self._channels.pop(name, None)
+        if channel is None:
+            return
+        for handler in list(channel.handlers):
+            handler.close()
+            channel.removeHandler(handler)
 
     def info(self, msg: str, *args: Any) -> None:
         self._logger.info(msg, *args)
@@ -361,11 +479,59 @@ def set_logger_resolver(resolver: Callable[[], Logger] | None) -> None:
     _logger_resolver = resolver
 
 
-def step(title: str, level: LogLevel = LogLevel.NORMAL) -> Step:
-    """Фабрика шагов уровня модуля, делегирующая зарегистрированному Logger."""
+def _resolve_logger() -> Logger:
     if _logger_resolver is None:
         raise RuntimeError(
             "Резолвер логгера не зарегистрирован. "
             "Вызовите set_logger_resolver() при настройке."
         )
-    return _logger_resolver().step(title, level=level)
+    return _logger_resolver()
+
+
+class _LazyStep:
+    """Ленивый шаг уровня модуля: резолвит активный `Logger` в момент входа
+    (`with`) или вызова обёрнутой функции (`@step`), а не при создании.
+
+    Критично для `@step(...)` на тестовом методе: декоратор применяется на
+    импорте, когда активного теста (и его `Logger`) ещё нет. Раннее разрешение
+    построило бы `Logger` на импорте - с неверным именем (`unknown`, т.к.
+    `PYTEST_CURRENT_TEST` ещё не выставлен) и не тем экземпляром. Ленивое
+    разрешение откладывает создание `Step` и `Logger` до прогона теста.
+    """
+
+    def __init__(self, title: str, level: LogLevel = LogLevel.NORMAL) -> None:
+        self.title = title
+        self.level = level
+        self._active: Step | None = None
+
+    def __enter__(self) -> Step:
+        self._active = _resolve_logger().step(self.title, level=self.level)
+        return self._active.__enter__()
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
+        active, self._active = self._active, None
+        if active is not None:
+            active.__exit__(exc_type, exc_val, exc_tb)
+
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            with _resolve_logger().step(self.title, level=self.level):
+                return func(*args, **kwargs)
+        return wrapper
+
+
+def step(title: str, level: LogLevel = LogLevel.NORMAL) -> _LazyStep:
+    """Фабрика шагов уровня модуля (ленивая).
+
+    Резолвит активный `Logger` лениво - на входе в `with` или при вызове
+    функции, обёрнутой `@step(...)`, - а не при создании. Поэтому `@step` можно
+    вешать на тестовые методы: `Logger` строится во время прогона, с верным
+    именем теста.
+    """
+    return _LazyStep(title, level=level)
