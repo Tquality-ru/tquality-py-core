@@ -1,9 +1,22 @@
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal
 
 from tquality_core.models.assets.js_scripts.common_js_scripts import CommonJSScripts
 from tquality_core.models.config import BaseConfig
 from tquality_core.services.base_js_actions import BaseJSActions
+
+#: CSS-псевдоэлемент для `get_pseudo_element_style` (второй аргумент
+#: `getComputedStyle`).
+PseudoElement = Literal[
+    "::before",
+    "::after",
+    "::marker",
+    "::placeholder",
+    "::first-line",
+    "::first-letter",
+    "::selection",
+    "::backdrop",
+]
 
 
 class JSActions(BaseJSActions):
@@ -37,6 +50,16 @@ class JSActions(BaseJSActions):
 
     def get_elements_from_point(self, x: float, y: float) -> list[Any]:
         return list(self.execute_script(CommonJSScripts.GET_ELEMENTS_FROM_POINT, x, y))
+
+    def get_pseudo_element_style(
+        self, selector: str, pseudo: PseudoElement, property_name: str,
+    ) -> str | None:
+        """Вычисленный стиль псевдоэлемента (`::before` и т.п.) у первого
+        элемента под `selector`; `None`, если элемент не найден."""
+        result = self.execute_script(
+            CommonJSScripts.GET_PSEUDO_ELEMENT_STYLE, selector, pseudo, property_name,
+        )
+        return None if result is None else str(result)
 
     # ── вкладки / окна ───────────────────────────────────────────────────────
     def open_in_new_tab(self, url: str) -> None:

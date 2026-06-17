@@ -7,6 +7,7 @@ from tquality_core import PathUtils
 class CommonElementJSScripts:
     __JS_DIR = PathUtils.get_js_scripts_dir() / "element"
 
+    BLUR = __JS_DIR / "blur.js"
     BORDER_ELEMENT = __JS_DIR / "border_element.js"
     ELEMENT_CLICK = __JS_DIR / "element_click.js"
     ELEMENT_IS_ON_SCREEN = __JS_DIR / "element_is_on_screen.js"
@@ -14,6 +15,8 @@ class CommonElementJSScripts:
     GET_CHECKBOX_STATE = __JS_DIR / "get_checkbox_state.js"
     GET_COMBOBOX_OPTIONS = __JS_DIR / "get_combobox_options.js"
     GET_COMBOBOX_SELECTED_TEXT = __JS_DIR / "get_combobox_selected_text.js"
+    GET_COMPUTED_STYLE = __JS_DIR / "get_computed_style.js"
+    GET_COMPUTED_STYLES = __JS_DIR / "get_computed_styles.js"
     GET_ELEMENT_CSS_SELECTOR = __JS_DIR / "get_element_css_selector.js"
     GET_ELEMENT_TEXT = __JS_DIR / "get_element_text.js"
     GET_ELEMENT_XPATH = __JS_DIR / "get_element_xpath.js"

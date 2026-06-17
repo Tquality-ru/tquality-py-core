@@ -3,6 +3,28 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.16] - 2026-06-17
+
+### Добавлено
+
+- **Computed-style / `blur` / псевдоэлементы в JS-слое** (обобщены из
+  inline-скриптов `tquality-py-selenium`, чтобы переиспользовались всеми
+  платформами, включая webview в `tquality-py-appium`):
+  - `JsElementActions.get_computed_style(name)` - вычисленное значение
+    CSS-свойства (пустая строка, если его нет).
+  - `JsElementActions.get_computed_styles()` - все вычисленные свойства
+    элемента одним запросом (выгоднее, чем дёргать `get_computed_style` в
+    цикле, например для snapshot-сравнений).
+  - `JsElementActions.blur()` - снять фокус: эмитит `blur` на элементе и
+    зовёт `blur()` у `document.activeElement` (с проверкой `HTMLElement`).
+  - `JSActions.get_pseudo_element_style(selector, pseudo, name)` - вычисленный
+    стиль псевдоэлемента (`::before` и т.п.) у первого элемента под
+    `selector`; `None`, если элемент не найден. Аргумент `pseudo` типизирован
+    `PseudoElement` (`Literal` из CSS-псевдоэлементов).
+  - Скрипты: `element/{get_computed_style,get_computed_styles,blur}.js`,
+    `document/get_pseudo_element_style.js`; записи реестров
+    `CommonElementJSScripts` / `CommonJSScripts` - покрыты тестами целостности.
+
 ## [0.1.15] - 2026-06-17
 
 ### Добавлено

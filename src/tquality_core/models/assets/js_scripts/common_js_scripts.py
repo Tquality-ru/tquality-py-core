@@ -12,6 +12,7 @@ class CommonJSScripts:
     GET_DEVICE_PIXEL_RATIO = __JS_DIR / "get_device_pixel_ratio.js"
     GET_ELEMENT_BY_XPATH = __JS_DIR / "get_element_by_xpath.js"
     GET_ELEMENTS_FROM_POINT = __JS_DIR / "get_elements_from_point.js"
+    GET_PSEUDO_ELEMENT_STYLE = __JS_DIR / "get_pseudo_element_style.js"
     IS_PAGE_LOADED = __JS_DIR / "is_page_loaded.js"
     OPEN_IN_NEW_TAB = __JS_DIR / "open_in_new_tab.js"
     OPEN_IN_NEW_WINDOW = __JS_DIR / "open_in_new_window.js"

@@ -35,6 +35,10 @@ class JsElementActions(BaseJSActions):
     def set_focus(self) -> None:
         self.execute_script(CommonElementJSScripts.SET_FOCUS)
 
+    def blur(self) -> None:
+        """Снять фокус: эмитит `blur` на элементе и зовёт `blur()` у активного."""
+        self.execute_script(CommonElementJSScripts.BLUR)
+
     def highlight(self, border: str = "3px solid red") -> None:
         """Подсветить элемент CSS-рамкой (по умолчанию красной)."""
         self.execute_script(CommonElementJSScripts.BORDER_ELEMENT, border)
@@ -71,6 +75,18 @@ class JsElementActions(BaseJSActions):
 
     def get_checkbox_state(self) -> bool:
         return bool(self.execute_script(CommonElementJSScripts.GET_CHECKBOX_STATE))
+
+    def get_computed_style(self, property_name: str) -> str:
+        """Вычисленное значение CSS-свойства (пустая строка, если его нет)."""
+        return str(
+            self.execute_script(CommonElementJSScripts.GET_COMPUTED_STYLE, property_name),
+        )
+
+    def get_computed_styles(self) -> dict[str, str]:
+        """Все вычисленные CSS-свойства элемента одним запросом (выгоднее, чем
+        дёргать `get_computed_style` в цикле)."""
+        styles = self.execute_script(CommonElementJSScripts.GET_COMPUTED_STYLES)
+        return {str(name): str(value) for name, value in styles.items()}
 
     def get_combobox_selected_text(self) -> str:
         return str(
