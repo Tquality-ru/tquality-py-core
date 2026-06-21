@@ -3,6 +3,28 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.17] - 2026-06-21
+
+### Добавлено
+
+- **Утилита метаданных pydantic-моделей** (`tquality_core.utils.pydantic_utils`)
+  - имена полей по их alias без создания экземпляра модели, удобно вместо
+  захардкоженных строк в тестах и для генерации документации/`.env.example`:
+  - `ModelMetadata` (для любого `BaseModel`) - имена при валидации и
+    сериализации: `get_validation_alias(lambda s: s.nested.field)` и
+    `get_serialization_alias(...)` возвращают `str`, плюс `validation_map()` /
+    `serialization_map()` (`{путь-через-точку: имя}`) для массового разбора.
+  - `SettingsMetadata` (для `BaseSettings`, наследник `ModelMetadata`) -
+    дополнительно имена переменных окружения, которые читает
+    `pydantic-settings`: `get_env_alias(lambda s: s.waiter.timeout)` →
+    `TEST_WAITER__TIMEOUT` (с учётом `env_prefix`, `env_nested_delimiter`,
+    `case_sensitive`, строковых `validation_alias`) и `env_map()`.
+  - Поле выбирается селектором-лямбдой: её аргумент типизирован как сама
+    модель, поэтому путь даёт автодополнение полей и отлов опечаток в IDE, а
+    резолвер возвращает честный `str`. `AliasChoices` сводится к первому
+    строковому варианту; `AliasPath` и попадание на вложенную модель (не
+    лист) дают понятную ошибку.
+
 ## [0.1.16] - 2026-06-17
 
 ### Добавлено
