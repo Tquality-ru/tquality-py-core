@@ -3,6 +3,19 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.1.19] - 2026-06-27
+
+### Исправлено
+
+- **`RequestArgsDict` — типы запроса из `requests._types`.** Поля (`params`,
+  `data`, `cookies`, `auth`, `timeout` и др.) переведены на алиасы requests как
+  источник истины вместо ручных приближений. `params` дополнительно принимает
+  `Mapping[str, Any]`, поэтому проходит и `TypedDict`-набор параметров: его
+  `.items()` даёт значения `object`, из-за чего сам по себе он к `ParamsType` не
+  присваивается. `cookies`/`proxies` приведены к тому, что реально принимает
+  `Session.request`. Floor extra `http_client` поднят до `requests>=2.34` (там
+  объявлены эти типы).
+
 ## [0.1.18] - 2026-06-27
 
 ### Добавлено

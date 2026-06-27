@@ -47,7 +47,7 @@ screencast = [
     "Pillow>=10.0",
 ]
 http_client = [
-    "requests>=2.32",
+    "requests>=2.34",
     "urllib3>=2.0",
 ]
 # Слой поверх http_client: разбор XML-ответов в pydantic-xml-модели (BaseXmlModel).
