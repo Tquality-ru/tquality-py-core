@@ -4,7 +4,7 @@
 # Использование:
 #   ./scripts/install-hooks.sh
 #
-# После установки pre-commit хук будет запускать mypy перед каждым коммитом
+# После установки pre-commit хук будет запускать ty перед каждым коммитом
 # и блокировать его при ошибках типов.
 set -euo pipefail
 
@@ -22,7 +22,7 @@ mkdir -p "$HOOK_DIR"
 
 cat > "$PRE_COMMIT" << 'HOOK_EOF'
 #!/usr/bin/env bash
-# Pre-commit хук: запускает mypy в strict-режиме.
+# Pre-commit хук: запускает ty в строгом режиме.
 # Блокирует коммит при ошибках типов.
 set -euo pipefail
 
@@ -30,18 +30,18 @@ HOOK_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$HOOK_DIR/../.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "==> Проверка типов через mypy..."
-if ! uv run mypy; then
+echo "==> Проверка типов через ty..."
+if ! uv run ty check; then
     echo ""
-    echo "✘ mypy нашел ошибки типов. Коммит отменен."
+    echo "✘ ty нашел ошибки типов. Коммит отменен."
     echo "  Исправьте ошибки или используйте 'git commit --no-verify' для пропуска."
     exit 1
 fi
 
-echo "✓ mypy проверка пройдена"
+echo "✓ ty проверка пройдена"
 HOOK_EOF
 
 chmod +x "$PRE_COMMIT"
 
 echo "✓ Git pre-commit хук установлен: $PRE_COMMIT"
-echo "  Теперь mypy будет запускаться перед каждым коммитом."
+echo "  Теперь ty будет запускаться перед каждым коммитом."

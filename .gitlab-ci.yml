@@ -7,7 +7,9 @@ default:
   # коробки. Экономит pip install uv и apt-get install git на каждом job.
   image: ghcr.io/astral-sh/uv:python3.12-bookworm
   before_script:
-    - uv sync --extra screencast
+    # Все extras: ty и тесты должны покрывать опциональные компоненты
+    # (screencast, http_client, xml), иначе их код не проверяется.
+    - uv sync --all-extras
   cache:
     key:
       files:
@@ -15,7 +17,7 @@ default:
     paths:
       - .venv/
       - .uv-cache/
-      - .mypy_cache/
+      - .ty_cache/
       - .pytest_cache/
   # Новый pipeline на тот же MR отменяет предыдущий.
   interruptible: true
@@ -25,10 +27,10 @@ variables:
   # Полный клон: hatch-vcs требует доступ к тегам для вычисления версии.
   GIT_DEPTH: 0
 
-mypy:
+ty:
   stage: check
   script:
-    - uv run mypy
+    - uv run ty check
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

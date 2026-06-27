@@ -46,6 +46,15 @@ screencast = [
     "numpy>=1.26",
     "Pillow>=10.0",
 ]
+http_client = [
+    "requests>=2.32",
+    "urllib3>=2.0",
+]
+# Слой поверх http_client: разбор XML-ответов в pydantic-xml-модели (BaseXmlModel).
+xml = [
+    "tquality-py-core[http_client]",
+    "pydantic-xml>=2.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/Tquality-ru/tquality-py-core"
@@ -61,7 +70,7 @@ tquality_core_per_test_files = "tquality_core.plugins.per_test_files"
 
 [dependency-groups]
 dev = [
-    "mypy>=1.11",
+    "ty>=0.0.54",
     "ruff>=0.14.0"
 ]
 
@@ -99,28 +108,30 @@ only-include = [
     "pyproject.toml",
 ]
 
-[tool.mypy]
-python_version = "3.12"
-strict = true
-plugins = ["pydantic.mypy"]
-files = ["."]
-exclude = ['(^|/)\.',  '__pycache__']
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
+[tool.pytest.ini_options]
+markers = [
+    "integration: тесты реальных интеграций (отключить: -m 'not integration')",
+]
 
-[[tool.mypy.overrides]]
-module = ["json5"]
-ignore_missing_imports = true
+[tool.ty.environment]
+python-version = "3.12"
 
-[tool.pydantic-mypy]
-init_forbid_extra = true
-warn_required_dynamic_aliases = true
+# error-on-warning держит проверку строгой, как mypy strict: любые
+# предупреждения (в т.ч. неиспользуемые `ty: ignore`) роняют проверку.
+# pydantic v2 ty понимает нативно через dataclass_transform - плагин не нужен.
+[tool.ty.terminal]
+error-on-warning = true
+
+# Аналог mypy ignore_missing_imports: пакеты без аннотаций/стабов не
+# считаются ошибкой разрешения импорта.
+[tool.ty.analysis]
+allowed-unresolved-imports = [
+    "json5",
+    "json5.**",
+    # Опциональный extra `xml`; в окружении без него импорт мягко отключается.
+    "pydantic_xml",
+    "pydantic_xml.**",
+]
 
 [tool.ruff]
 exclude = [".*", "__pycache__"]

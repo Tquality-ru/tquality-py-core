@@ -20,6 +20,11 @@ WinAppDriver) build on.
 - **`BaseElement`** — abstract interface implemented by driver-specific
   element types.
 - **`StringUtils`** — string-parsing helpers.
+- **`http_client`** *(optional — extra `http_client`)* — typed HTTP client on
+  top of `requests` + `pydantic`: `BaseClient` (a `requests.Session` wrapper
+  with client-level headers, cookies, timeout and retries) and `ApiResponse[T]`
+  whose lazy, thread-safe `.data` validates the response body into a pydantic
+  model. XML bodies via the `xml` extra. See [HTTP client](#http-client-optional).
 
 ## Out of scope
 
@@ -84,6 +89,23 @@ dependencies = [
 
 Direct git references require `[tool.hatch.metadata] allow-direct-references = true` on the consumer's side.
 
+### Optional extras
+
+The core is usable as-is; these extras add optional components and their
+dependencies:
+
+- **`http_client`** — typed HTTP client (`tquality_core.http_client`); pulls
+  in `requests`, `urllib3`.
+- **`xml`** — XML response parsing for the HTTP client; pulls in
+  `pydantic-xml` (and `http_client`).
+- **`screencast`** — step video recording; pulls in `imageio`,
+  `imageio-ffmpeg`, `numpy`, `Pillow`.
+
+```bash
+pip install "tquality-py-core[http_client]"
+pip install "tquality-py-core[xml]"          # http_client + XML support
+```
+
 ## CLI
 
 After installation the `tquality-config` command is available:
@@ -116,10 +138,59 @@ Editors with JSON Schema support (VS Code, JetBrains IDEs) autocomplete
 the available fields and validate values. The jsonc/json5 syntax allows
 `//` and `/* */` comments and trailing commas.
 
+## HTTP client (optional)
+
+Install with the `http_client` extra, then subclass `BaseClient` and declare
+typed endpoints. `ApiResponse[T].data` lazily validates the response body into
+your pydantic model:
+
+```python
+from pydantic import BaseModel
+from tquality_core.http_client import ApiResponse, BaseClient, ContentType, Headers
+
+
+class User(BaseModel):
+    id: int
+    name: str
+
+
+class ExampleApi(BaseClient):
+    def __init__(self, token: str) -> None:
+        super().__init__(
+            "https://api.example.com",
+            persistent_headers=Headers(
+                authorization=f"Bearer {token}",
+                content_type=ContentType.APPLICATION_JSON,
+            ),
+            timeout=30,   # seconds; also retries 429/5xx via urllib3 Retry
+        )
+
+    def get_user(self, user_id: int) -> ApiResponse[User]:
+        return self._get(f"/users/{user_id}", User)
+
+
+user = ExampleApi(token).get_user(1).data   # -> User (validated); raises on a bad body
+```
+
+- **`.data` is typed exactly `T`.** `None` appears only if you include it in
+  the model (`User | None`) or pass no model. A required model with an empty or
+  invalid body raises `pydantic.ValidationError`.
+- **`Headers`** serializes snake_case fields to canonical `Header-Case`
+  (`content_type` → `Content-Type`), keeps unknown headers verbatim, and offers
+  common headers as constructor hints (`authorization`, `x_api_key`,
+  `x_ibm_client_id`, …).
+- **XML APIs:** install the `xml` extra and use a `pydantic_xml.BaseXmlModel`
+  response model — the body is parsed from XML bytes automatically instead of
+  JSON.
+
+The `BaseClient` request methods (`_get`/`_post`/`_request`) are protected:
+expose intent-revealing endpoint methods on your subclass rather than calling
+them from test code directly.
+
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for environment setup, git-hook
-installation and mypy type checking.
+installation and ty type checking.
 
 ## Version history
 

@@ -31,11 +31,11 @@ def test_schema_url_resolves_to_master_on_dev_install() -> None:
     from tquality_core.schema import _resolve_ref
     import tquality_core.schema as schema_mod
 
-    def _stub_version(_name: str) -> str:
+    def _stub_version(distribution_name: str) -> str:
         return "0.1.3+gabc123.d20260424"
 
     original = schema_mod.importlib.metadata.version  # type: ignore[attr-defined]
-    schema_mod.importlib.metadata.version = _stub_version  # type: ignore[attr-defined]
+    schema_mod.importlib.metadata.version = _stub_version  # type: ignore[attr-defined]  # ty:ignore[invalid-assignment]
     try:
         assert _resolve_ref() == "master"
     finally:
@@ -47,11 +47,11 @@ def test_schema_url_resolves_to_version_on_release_install() -> None:
     from tquality_core.schema import _resolve_ref
     import tquality_core.schema as schema_mod
 
-    def _stub_version(_name: str) -> str:
+    def _stub_version(distribution_name: str) -> str:
         return "0.1.3"
 
     original = schema_mod.importlib.metadata.version  # type: ignore[attr-defined]
-    schema_mod.importlib.metadata.version = _stub_version  # type: ignore[attr-defined]
+    schema_mod.importlib.metadata.version = _stub_version  # type: ignore[attr-defined]  # ty:ignore[invalid-assignment]
     try:
         assert _resolve_ref() == "v0.1.3"
     finally:

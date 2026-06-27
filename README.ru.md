@@ -20,6 +20,12 @@ Appium, WinAppDriver).
 - **`BaseElement`** - абстрактный интерфейс, который реализуют элементы,
   специфичные для драйвера.
 - **`StringUtils`** - вспомогательные функции разбора строк.
+- **`http_client`** *(опционально - extra `http_client`)* - типизированный
+  HTTP-клиент поверх `requests` + `pydantic`: `BaseClient` (обёртка над
+  `requests.Session` с заголовками, cookies, таймаутом и ретраями на уровне
+  клиента) и `ApiResponse[T]`, чьё ленивое потокобезопасное свойство `.data`
+  валидирует тело ответа в pydantic-модель. XML-тела - через extra `xml`.
+  См. [HTTP-клиент](#http-клиент-опционально).
 
 ## Не входит в ядро
 
@@ -83,13 +89,30 @@ dependencies = [
 
 Прямые git-ссылки требуют `[tool.hatch.metadata] allow-direct-references = true` у потребителя.
 
+### Опциональные extras
+
+Ядро работает само по себе; эти extras добавляют опциональные компоненты и
+их зависимости:
+
+- **`http_client`** - типизированный HTTP-клиент (`tquality_core.http_client`);
+  тянет `requests`, `urllib3`.
+- **`xml`** - разбор XML-ответов для HTTP-клиента; тянет `pydantic-xml`
+  (и `http_client`).
+- **`screencast`** - видеозапись шагов; тянет `imageio`, `imageio-ffmpeg`,
+  `numpy`, `Pillow`.
+
+```bash
+pip install "tquality-py-core[http_client]"
+pip install "tquality-py-core[xml]"          # http_client + поддержка XML
+```
+
 ## CLI
 
 После установки доступна команда `tquality-config`:
 
 ```bash
 tquality-config init        # сгенерировать config.json5 со значениями по умолчанию
-tquality-config schema      # сгенерировать schema/config.schema.json (для сопровождающих)
+tquality-config schema      # сгенерировать schema/config.schema.json (для контрибьюторов)
 ```
 
 Сгенерированный `config.json5` включает ссылку на JSON-схему, опубликованную
@@ -115,17 +138,65 @@ tquality-config schema      # сгенерировать schema/config.schema.js
 подсказывают доступные поля и проверяют значения. Синтаксис jsonc/json5
 позволяет оставлять комментарии `//` и `/* */` и висячие запятые.
 
+## HTTP-клиент (опционально)
+
+Установите с extra `http_client`, затем наследуйте `BaseClient` и опишите
+типизированные эндпоинты. `ApiResponse[T].data` лениво валидирует тело ответа
+в вашу pydantic-модель:
+
+```python
+from pydantic import BaseModel
+from tquality_core.http_client import ApiResponse, BaseClient, ContentType, Headers
+
+
+class User(BaseModel):
+    id: int
+    name: str
+
+
+class ExampleApi(BaseClient):
+    def __init__(self, token: str) -> None:
+        super().__init__(
+            "https://api.example.com",
+            persistent_headers=Headers(
+                authorization=f"Bearer {token}",
+                content_type=ContentType.APPLICATION_JSON,
+            ),
+            timeout=30,   # секунды; также ретраит 429/5xx через urllib3 Retry
+        )
+
+    def get_user(self, user_id: int) -> ApiResponse[User]:
+        return self._get(f"/users/{user_id}", User)
+
+
+user = ExampleApi(token).get_user(1).data   # -> User (валидно); бросает при некорректном теле
+```
+
+- **Тип `.data` - ровно `T`.** `None` появляется, только если он явно в модели
+  (`User | None`) или модель не передана. Обязательная модель при пустом или
+  некорректном теле бросает `pydantic.ValidationError`.
+- **`Headers`** сериализует snake_case-поля в канонический `Header-Case`
+  (`content_type` → `Content-Type`), пропускает неизвестные заголовки как есть
+  и подсказывает частые заголовки в конструкторе (`authorization`, `x_api_key`,
+  `x_ibm_client_id`, …).
+- **XML API:** установите extra `xml` и используйте модель ответа -
+  наследника `pydantic_xml.BaseXmlModel`; тело разбирается из XML-байтов
+  автоматически вместо JSON.
+
+Методы запроса `BaseClient` (`_get`/`_post`/`_request`) защищённые: выносите
+осмысленные методы-эндпоинты в подкласс, а не зовите их из тестов напрямую.
+
 ## Разработка
 
 См. [CONTRIBUTING.md](CONTRIBUTING.md) для инструкций по настройке окружения
-разработчика, установке перехватчиков git и проверке типов mypy.
+разработчика, установке перехватчиков git и проверке типов ty.
 
 ## История версий
 
 См. [CHANGELOG.md](CHANGELOG.md). Описание CI/CD - в
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Зачем это существует
+## Назначение
 
 Отделяет универсальные шаблоны (журналирование, объекты страниц, загрузка
 конфигурации) от кода, специфичного для драйвера. Appium и WinAppDriver

@@ -84,7 +84,7 @@ class LazyElements[E](Sequence[E]):
             def _find() -> Any:
                 return bound[index]
 
-        elem._find = _find  # type: ignore[attr-defined]
+        elem._find = _find  # type: ignore[attr-defined]  # ty:ignore[unresolved-attribute]
         return elem
 
 

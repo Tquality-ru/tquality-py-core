@@ -1,5 +1,6 @@
 """Тесты core-`Waiter`: bool-возврат, raise_on_timeout, poll_interval,
 message override, ignored_exceptions."""
+
 from __future__ import annotations
 
 import time
@@ -21,7 +22,7 @@ def _make_waiter(
 ) -> tuple[Waiter, Mock]:
     logger = Mock()
     waiter = Waiter(
-        config=_DummyConfig(),  # type: ignore[arg-type]
+        config=_DummyConfig(),  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
         logger_resolver=lambda: logger,
         ignored_exceptions=ignored_exceptions,
         default_raise_cls=default_raise_cls,
@@ -44,7 +45,8 @@ def test_raise_on_timeout_true_raises_default_cls() -> None:
     with pytest.raises(WaitTimeoutError, match="custom-msg"):
         waiter.until(
             lambda: False,
-            timeout=0.05, poll_interval=0.01,
+            timeout=0.05,
+            poll_interval=0.01,
             raise_on_timeout=True,
             message="custom-msg",
         )
@@ -58,7 +60,8 @@ def test_raise_on_timeout_uses_default_raise_cls_from_init() -> None:
     with pytest.raises(MyError):
         waiter.until(
             lambda: False,
-            timeout=0.05, poll_interval=0.01,
+            timeout=0.05,
+            poll_interval=0.01,
             raise_on_timeout=True,
         )
 
@@ -71,7 +74,8 @@ def test_raise_on_timeout_explicit_class_overrides_default() -> None:
     with pytest.raises(MyError, match="explicit"):
         waiter.until(
             lambda: False,
-            timeout=0.05, poll_interval=0.01,
+            timeout=0.05,
+            poll_interval=0.01,
             raise_on_timeout=MyError,
             message="explicit",
         )
@@ -82,7 +86,7 @@ def test_ignored_exceptions_are_swallowed() -> None:
     seq = iter([KeyError("not yet"), KeyError("still not"), True])
 
     def cond() -> bool:
-        return next(seq)  # type: ignore[return-value]
+        return next(seq)  # type: ignore[return-value]  # ty:ignore[invalid-return-type]
 
     assert waiter.until(cond, poll_interval=0.01) is True
 
@@ -99,10 +103,15 @@ def test_per_call_ignored_overrides_init_ignored() -> None:
 
     # Per-call override that DOES include ValueError swallows it.
     started = time.monotonic()
-    assert waiter.until(
-        cond, timeout=0.05, poll_interval=0.01,
-        ignored_exceptions=(ValueError,),
-    ) is False
+    assert (
+        waiter.until(
+            cond,
+            timeout=0.05,
+            poll_interval=0.01,
+            ignored_exceptions=(ValueError,),
+        )
+        is False
+    )
     assert time.monotonic() - started < 0.5
 
 
@@ -129,7 +138,8 @@ def test_message_passes_to_log_and_exception() -> None:
     with pytest.raises(WaitTimeoutError, match="search results screen"):
         waiter.until(
             lambda: False,
-            timeout=0.05, poll_interval=0.01,
+            timeout=0.05,
+            poll_interval=0.01,
             raise_on_timeout=True,
             message="search results screen to be present",
         )
@@ -143,7 +153,7 @@ def test_timeout_uses_config_default() -> None:
 
     logger = Mock()
     w = Waiter(
-        config=_C(),  # type: ignore[arg-type]
+        config=_C(),  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
         logger_resolver=lambda: logger,
     )
     started = time.monotonic()
@@ -159,7 +169,7 @@ def test_poll_interval_uses_config_default() -> None:
 
     logger = Mock()
     w = Waiter(
-        config=_C(),  # type: ignore[arg-type]
+        config=_C(),  # type: ignore[arg-type]  # ty:ignore[invalid-argument-type]
         logger_resolver=lambda: logger,
     )
     calls: list[float] = []

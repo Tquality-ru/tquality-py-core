@@ -12,17 +12,17 @@ uv sync
 ```
 
 Команда создаст `.venv/` и установит зависимости проекта плюс dev-группу
-(mypy и др.).
+(ty и др.).
 
 ## Установка git-хуков
 
-Для автоматической проверки типов mypy перед каждым коммитом выполните:
+Для автоматической проверки типов ty перед каждым коммитом выполните:
 
 ```bash
 ./scripts/install-hooks.sh
 ```
 
-Скрипт установит pre-commit хук, который запускает `uv run mypy` и блокирует
+Скрипт установит pre-commit хук, который запускает `uv run ty check` и блокирует
 коммит при ошибках типов.
 
 ## Стиль кода
@@ -62,10 +62,10 @@ uv sync
 
 ## Проверка типов
 
-Проект использует `mypy` в strict-режиме. Перед push'ем проверьте:
+Проект использует `ty` в строгом режиме. Перед push'ем проверьте:
 
 ```bash
-uv run mypy
+uv run ty check
 ```
 
 Ошибки типов блокируют merge в master.
@@ -102,7 +102,7 @@ uv build
 
 ### На каждом MR и на master
 
-- **`mypy`** - строгий режим проверки типов.
+- **`ty`** - строгий режим проверки типов.
 - **`tests`** - запуск pytest с JUnit-отчётом.
 
 ## Релиз
@@ -184,8 +184,8 @@ tquality-py-core = { index = "tquality" }
 
 ```
 tquality-py-core/
-├── .gitlab-ci.yml          # CI: mypy + pytest на MR и master
-├── pyproject.toml          # конфиг проекта, mypy, зависимости
+├── .gitlab-ci.yml          # CI: ty + pytest на MR и master
+├── pyproject.toml          # конфиг проекта, ty, зависимости
 ├── scripts/
 │   └── install-hooks.sh    # установка git pre-commit хука
 ├── schema/
