@@ -1,5 +1,9 @@
 # tquality-py-core
 
+[![PyPI](https://img.shields.io/pypi/v/tquality-py-core)](https://pypi.org/project/tquality-py-core/)
+[![License](https://img.shields.io/pypi/l/tquality-py-core)](https://github.com/Tquality-ru/tquality-py-core/blob/master/LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-Tquality--ru%2Ftquality--py--core-blue?logo=github)](https://github.com/Tquality-ru/tquality-py-core)
+
 **Языки:** [English](README.md) · **Русский**
 
 Независимое от драйвера ядро для автоматизации тестирования tquality. Предоставляет
