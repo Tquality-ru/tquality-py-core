@@ -1,10 +1,13 @@
-from tquality_core.elements.base_element import BaseElement
-from tquality_core.elements.element_state import (
+from typing import TYPE_CHECKING
+
+from tquality_core.elements._base_by import BaseBy
+from tquality_core.elements._base_element import BaseElement
+from tquality_core.elements._element_state import (
     ElementState,
     StatePredicate,
     StateSpec,
 )
-from tquality_core.elements.locator import Locator
+from tquality_core.elements._formattable_element import FormattableElement
 from tquality_core.models import (
     BaseConfig,
     JsoncConfigSettingsSource,
@@ -42,13 +45,14 @@ from tquality_core.utils.string_utils import StringUtils
 from tquality_core.utils.xpath_utils import XPathUtils
 
 __all__ = [
+    "BaseBy",
     "BaseConfig",
     "BaseElement",
     "BaseForm",
     "ElementState",
+    "FormattableElement",
     "JsoncConfigSettingsSource",
     "LazyElements",
-    "Locator",
     "Logger",
     "LogLevel",
     "LogLevelName",
@@ -76,3 +80,43 @@ __all__ = [
     "set_logger_resolver",
     "step",
 ]
+
+# Опциональный http_client: ленивый ре-экспорт с верхнего уровня, только при
+# установленном extra `http_client`. `import tquality_core` остаётся лёгким (без
+# requests), а `from tquality_core import BaseClient` работает при наличии extra.
+if TYPE_CHECKING:  # для статических чекеров; в рантайме имена даёт __getattr__
+    from tquality_core.http_client import (  # noqa: F401  # ре-экспорт верхнего уровня
+        ApiResponse,
+        BaseClient,
+        ContentType,
+        Headers,
+        ModelType,
+        RequestArgsDict,
+        Timeout,
+        TimeoutHTTPAdapter,
+    )
+
+_HTTP_CLIENT_EXPORTS = frozenset(
+    {
+        "ApiResponse",
+        "BaseClient",
+        "ContentType",
+        "Headers",
+        "ModelType",
+        "RequestArgsDict",
+        "Timeout",
+        "TimeoutHTTPAdapter",
+    }
+)
+
+
+def __getattr__(name: str) -> object:  # PEP 562
+    if name in _HTTP_CLIENT_EXPORTS:
+        try:
+            import tquality_core.http_client as http_client
+        except ImportError as exc:
+            raise ImportError(
+                f"'{name}' требует extra 'http_client': pip install \"tquality-py-core[http_client]\""
+            ) from exc
+        return getattr(http_client, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

@@ -65,7 +65,7 @@ def build_schema_url(
 
 
 def _resolve_ref() -> str:
-    """Backwards-compat shim for old tests/imports."""
+    """Shim обратной совместимости для старых тестов/импортов."""
     return resolve_ref(_CORE_PACKAGE_NAME)
 
 

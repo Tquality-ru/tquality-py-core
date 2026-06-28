@@ -2,7 +2,7 @@ from enum import StrEnum
 
 
 class ContentType(StrEnum):
-    """Common `Content-Type` / `Accept` MIME types. Members are the literal header strings."""
+    """Частые MIME-типы для `Content-Type` / `Accept`. Варианты enum - это сами строковые значения заголовка."""
 
     ANY = "*/*"
     APPLICATION_JSON = "application/json"

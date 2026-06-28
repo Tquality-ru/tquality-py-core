@@ -5,7 +5,7 @@ from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, DEFAULT_RETRI
 from urllib3.util.retry import Retry
 
 type Timeout = float | tuple[float | None, float | None] | None
-"""Request timeout in **seconds**: a single value, or a `(connect, read)` pair (`None` waits forever)."""
+"""Таймаут запроса в **секундах**: одно значение либо пара `(connect, read)` (`None` - ждать бесконечно)."""
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):

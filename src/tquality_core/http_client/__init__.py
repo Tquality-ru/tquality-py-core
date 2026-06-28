@@ -1,12 +1,12 @@
-"""Typed HTTP client built on `requests` + `pydantic`.
+"""Типизированный HTTP-клиент на `requests` + `pydantic`.
 
-Optional component — install with the `http_client` extra:
+Опциональный компонент — ставится через extra `http_client`:
 
     pip install "tquality-py-core[http_client]"
 
-It pulls in `requests` and `urllib3`; importing this subpackage without the extra raises `ModuleNotFoundError`.
+Тянет `requests` и `urllib3`; импорт подпакета без extra поднимает `ModuleNotFoundError`.
 
-The public API lives here; the underscore-prefixed modules are private implementation detail.
+Публичный API — здесь; модули с префиксом `_` - приватная реализация.
 """
 
 from tquality_core.http_client._base_client import BaseClient

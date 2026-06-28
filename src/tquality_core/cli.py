@@ -37,7 +37,7 @@ from tquality_core.utils.path_utils import PathUtils
 def _default_config_dict(
     config_cls: type[BaseConfig], schema_url: str,
 ) -> dict[str, Any]:
-    """Словарь значений по умолчанию `config_cls` с ссылкой на схему."""
+    """Словарь значений по умолчанию `config_cls` со ссылкой на схему."""
     cfg = config_cls()
     data: dict[str, Any] = {"$schema": schema_url}
     data.update(cfg.model_dump(mode="json"))

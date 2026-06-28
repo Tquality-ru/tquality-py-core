@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from tquality_core.elements.base_element import BaseElement
+    from tquality_core.elements._base_element import BaseElement
 
 
 class BaseForm:
@@ -38,5 +38,5 @@ class BaseForm:
         return self._unique_element.is_displayed
 
     def wait_for_displayed(self, timeout: float | None = None) -> BaseForm:
-        self._unique_element.wait_for_displayed(timeout)
+        self._unique_element.wait.until_visible(timeout, raise_on_timeout=True)
         return self

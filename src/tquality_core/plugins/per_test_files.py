@@ -1,9 +1,9 @@
 """Per-test pytest plugin: разрешает конфиги от директории каждого теста,
 а не от CWD pytest.
 
-Для чего: `BaseConfig` умеет цепочку `config.json5` от стартовой директории
-к границе проекта, а `CapabilitiesConfig` (в appium-пакете) - first-match
-upward от неё. Но pytest-у всё равно, в какой подпапке лежит тест: CWD один
+Для чего: `BaseConfig` умеет собирать цепочку `config.json5` от стартовой
+директории до границы проекта, а `CapabilitiesConfig` (в appium-пакете) -
+first-match upward от неё. Но pytest-у всё равно, в какой подпапке лежит тест: CWD один
 на весь процесс. Плагин регистрируется автоматически (entry-point `pytest11`)
 и перед каждым тестом смещает `PathUtils.config_search_dir` на директорию
 этого теста. Поэтому `config.json5` / `capabilities.json5` рядом с тестом

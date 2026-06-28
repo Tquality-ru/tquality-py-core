@@ -8,14 +8,14 @@ from typing import Any, Literal, cast
 from pydantic import TypeAdapter
 from requests import Response
 
-_BaseXmlModel: type | None = None  # populated when the optional `xml` extra is installed
+_BaseXmlModel: type | None = None  # заполняется, когда установлен опциональный extra `xml`
 try:
     from pydantic_xml import BaseXmlModel as _BaseXmlModel
 except ImportError:
     pass
 
 type ModelType[T] = type[T | None] | UnionType
-"""A concrete model class (`type[T]`) or a union form (`A | B | None`) to validate the body against."""
+"""Конкретный класс модели (`type[T]`) или union-форма (`A | B | None`), в которую валидируется тело ответа."""
 
 
 class _Sentinel(enum.Enum):

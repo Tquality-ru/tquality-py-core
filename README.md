@@ -19,6 +19,9 @@ WinAppDriver) build on.
   form with the full context).
 - **`BaseElement`** — abstract interface implemented by driver-specific
   element types.
+- **`FormattableElement[E]`** — a template element holding a locator with
+  `str.format` placeholders; `.format(*args, **kwargs)` fills the locator
+  `value` and returns a ready-to-use concrete element `E`.
 - **`StringUtils`** — string-parsing helpers.
 - **`http_client`** *(optional — extra `http_client`)* — typed HTTP client on
   top of `requests` + `pydantic`: `BaseClient` (a `requests.Session` wrapper
