@@ -1,4 +1,7 @@
-"""Интеграционные тесты BaseClient/ApiResponse против jsonplaceholder.typicode.com."""
+"""Интеграционные тесты BaseClient/ApiResponse на реальном JSON-эндпоинте (реальная сеть).
+
+Конкретный эндпоинт - jsonplaceholder.typicode.com.
+"""
 from __future__ import annotations
 
 from collections.abc import Callable
