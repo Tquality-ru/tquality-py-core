@@ -1,5 +1,5 @@
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, override
 
 from tquality_core.models.assets.js_scripts.common_element_js_scripts import (
     CommonElementJSScripts,
@@ -22,6 +22,7 @@ class JsElementActions(BaseJSActions):
         super().__init__(js_executor, js_async_executor)
         self._get_element = element_getter
 
+    @override
     def _prefix_args(self) -> tuple[Any, ...]:
         return (self._get_element(),)
 

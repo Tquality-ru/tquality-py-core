@@ -1,7 +1,7 @@
 """Тесты для BaseElement (абстрактный интерфейс) и BaseBy."""
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, override
 
 import pytest
 
@@ -47,36 +47,45 @@ class _Impl(BaseElement):
         self._name = name or f"{self.__class__.__name__}({by})"
 
     @property
+    @override
     def name(self) -> str:
         return self._name
 
     @property
+    @override
     def by(self) -> BaseBy:
         return self._by
 
     @property
+    @override
     def text(self) -> str:
         return ""
 
     @property
+    @override
     def is_displayed(self) -> bool:
         return False
 
     @property
+    @override
     def is_present(self) -> bool:
         return False
 
     @property
+    @override
     def is_enabled(self) -> bool:
         return False
 
     @property
+    @override
     def wait(self) -> Any:
         return None
 
+    @override
     def get_attribute(self, attr: str) -> str | None:
         return None
 
+    @override
     def click(self) -> None:
         pass
 

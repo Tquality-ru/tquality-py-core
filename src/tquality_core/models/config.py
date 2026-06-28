@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import ClassVar
+from typing import ClassVar, override
 
 from pydantic import BaseModel, Field
 from pydantic_settings import (
@@ -189,6 +189,7 @@ class BaseConfig(BaseSettings):
     )
 
     @classmethod
+    @override
     def settings_customise_sources(
         cls,
         settings_cls: type[BaseSettings],

@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 import json5
 from pydantic_settings import JsonConfigSettingsSource
@@ -20,6 +20,7 @@ class JsoncConfigSettingsSource(JsonConfigSettingsSource):
     описать, зачем она такая.
     """
 
+    @override
     def _read_file(self, file_path: Path) -> dict[str, Any]:
         with file_path.open(encoding=self.json_file_encoding) as f:
             data = json5.load(f)

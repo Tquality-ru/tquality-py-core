@@ -27,7 +27,7 @@ By.accessibility_id("ok")  # своё
 """
 from __future__ import annotations
 
-from typing import Self
+from typing import Self, override
 
 
 class BaseBy(tuple[str, str]):
@@ -52,9 +52,11 @@ class BaseBy(tuple[str, str]):
         ожидавшем кортеж (напр. `FormattableElement`)."""
         return type(self)(self[0], value)
 
+    @override
     def __str__(self) -> str:
         return f"{self[0]}={self[1]}"
 
+    @override
     def __repr__(self) -> str:
         return f"{type(self).__name__}(by={self[0]!r}, value={self[1]!r})"
 

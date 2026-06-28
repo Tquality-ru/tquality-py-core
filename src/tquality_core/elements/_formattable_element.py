@@ -26,7 +26,7 @@ cell.format(row=42, col=3).text     # //tr[@data-id=42]/td[3]
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Generic
+from typing import Any, Callable, Generic, override
 
 from typing_extensions import TypeVar
 
@@ -78,6 +78,7 @@ class FormattableElement(Generic[E, L]):
         value = self._locator.value.format(*args, **kwargs)
         return self._builder(self._locator._replace(value=value))
 
+    @override
     def __repr__(self) -> str:
         return self._name
 

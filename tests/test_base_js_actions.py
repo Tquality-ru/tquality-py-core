@@ -4,7 +4,7 @@
 Аргументы прокидываются после неявных префиксных (которые подставляет подкласс)."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, override
 
 from tquality_core.services.base_js_actions import BaseJSActions
 
@@ -72,6 +72,7 @@ def test_prefix_args_precede_user_args() -> None:
     sync = _Recorder()
 
     class _WithPrefix(BaseJSActions):
+        @override
         def _prefix_args(self) -> tuple[Any, ...]:
             return ("<element>",)
 

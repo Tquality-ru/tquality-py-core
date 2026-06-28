@@ -18,7 +18,7 @@ AppiumDriverService.
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
-from typing import Any, Callable, overload
+from typing import Any, Callable, overload, override
 
 
 class LazyElements[E](Sequence[E]):
@@ -39,9 +39,11 @@ class LazyElements[E](Sequence[E]):
     def _driver(self) -> Any:
         return self._driver_resolver()
 
+    @override
     def __len__(self) -> int:
         return len(self._driver.find_elements(*self._by))
 
+    @override
     def __iter__(self) -> Iterator[E]:
         snapshot = self._driver.find_elements(*self._by)
         for i in range(len(snapshot)):
@@ -51,6 +53,7 @@ class LazyElements[E](Sequence[E]):
     def __getitem__(self, index: int) -> E: ...
     @overload
     def __getitem__(self, index: slice) -> list[E]: ...
+    @override
     def __getitem__(self, index: int | slice) -> E | list[E]:
         if isinstance(index, slice):
             snapshot = self._driver.find_elements(*self._by)

@@ -1,3 +1,5 @@
+from typing import override
+
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
 from pydantic_settings import SettingsConfigDict
@@ -28,6 +30,7 @@ class _EnvProxy(_NameProxy):
         seg = _NameProxy._validation_name(field, name)
         return seg if (top and seg != name) else prefix + seg
 
+    @override
     def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> '_EnvProxy':
         cfg = object.__getattribute__(self, "_cfg")
         delim = cfg.get("env_nested_delimiter", "")
@@ -35,6 +38,7 @@ class _EnvProxy(_NameProxy):
             raise ValueError(f"{name!r} is a nested model but env_nested_delimiter is not set")
         return _EnvProxy(submodel, cfg, prefix=self._full(field, name) + delim)
 
+    @override
     def _leaf(self, field: FieldInfo, name: str) -> str:
         cfg = object.__getattribute__(self, "_cfg")
         full = self._full(field, name)

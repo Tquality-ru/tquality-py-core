@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, override
 
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
@@ -21,9 +21,11 @@ class _AliasProxy(_NameProxy):
         super().__init__(model)
         object.__setattr__(self, "_kind", kind)
 
+    @override
     def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> '_AliasProxy':
         return _AliasProxy(submodel, object.__getattribute__(self, "_kind"))
 
+    @override
     def _leaf(self, field: FieldInfo, name: str) -> str:
         if object.__getattribute__(self, "_kind") == "validation":
             return _NameProxy._validation_name(field, name)

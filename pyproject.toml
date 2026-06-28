@@ -133,9 +133,82 @@ allowed-unresolved-imports = [
     "pydantic_xml.**",
 ]
 
+[tool.ty.rules]
+# Каждый переопределяющий метод обязан нести `@typing.override` - явный
+# override ловит рассинхрон с базовым классом (опечатка в имени, ушедшая
+# сигнатура) на этапе проверки типов.
+missing-override-decorator = "error"
+# Запрет «голых» дженериков (`list` вместо `list[str]`, `BaseElement` вместо
+# `BaseElement[...]`) - тип-аргумент обязателен.
+missing-type-argument = "error"
+# Доступ к атрибуту, которого может не быть на части union-вариантов.
+possibly-missing-attribute = "error"
+# Импорт, который может отсутствовать (условные/частичные импорты).
+possibly-missing-import = "error"
+# Использование имени, которое может быть не определено (use-before-def,
+# условный bind).
+possibly-unresolved-reference = "error"
+# Динамический базовый класс (база - не статически известный тип).
+unsupported-dynamic-base = "error"
+# Деление на ноль. В ty выключено по умолчанию из-за ложноположительных;
+# здесь 0 срабатываний, поэтому включаем.
+division-by-zero = "error"
+
 [tool.ruff]
 exclude = [".*", "__pycache__"]
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "N"]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # isort
+    "N",        # pep8-naming
+    "A",        # flake8-builtins (затенение builtin-имён)
+    "ASYNC",    # flake8-async
+    "BLE",      # flake8-blind-except
+    "FLY",      # flynt (static str.join -> f-string)
+    "G",        # flake8-logging-format
+    "ICN",      # flake8-import-conventions
+    "INP",      # flake8-no-pep420 (отсутствие __init__.py)
+    "INT",      # flake8-gettext
+    "ISC",      # flake8-implicit-str-concat
+    "LOG",      # flake8-logging
+    "PIE",      # flake8-pie
+    "PLE",      # pylint errors
+    "PTH",      # flake8-use-pathlib
+    "RET",      # flake8-return
+    "RSE",      # flake8-raise
+    "SLOT",     # flake8-slots
+    "TID",      # flake8-tidy-imports
+    "YTT",      # flake8-2020 (устаревшие sys.version проверки)
+]
+
+# TODO: дают замечания на текущем коде - включать после чистки.
+# Число рядом = текущее количество срабатываний на src/ + tests/.
+# select += [
+#   "C4",    # 1    flake8-comprehensions
+#   "DTZ",   # 1    flake8-datetimez
+#   "FBT",   # 1    flake8-boolean-trap
+#   "PERF",  # 1    perflint
+#   "PGH",   # 1    pygrep-hooks (бланкетные noqa/ignore)
+#   "B",     # 2    flake8-bugbear
+#   "PLW",   # 2    pylint warnings
+#   "ARG",   # 3    flake8-unused-arguments
+#   "T20",   # 3    flake8-print
+#   "PLC",   # 5    pylint conventions
+#   "Q",     # 6    flake8-quotes
+#   "SIM",   # 6    flake8-simplify
+#   "PT",    # 7    flake8-pytest-style
+#   "UP",    # 9    pyupgrade
+#   "COM",   # 11   flake8-commas (может конфликтовать с форматтером)
+#   "TRY",   # 13   tryceratops
+#   "EM",    # 14   flake8-errmsg
+#   "TC",    # 25   flake8-type-checking
+#   "PLR",   # 30   pylint refactor
+#   "ANN",   # 34   flake8-annotations
+#   "SLF",   # 35   flake8-self (доступ к _private извне)
+#   "S",     # 222  flake8-bandit (в основном assert в тестах)
+#   "RUF",   # 261  ruff-specific
+#   "D",     # 301  pydocstyle
+# ]
