@@ -119,6 +119,7 @@ class WebmScreencastRecorder:
         max_width = self._max_width
         frame_tick = 1.0 / fps
         rgb_frames: list[Any] = []
+        target_size: tuple[int, int] | None = None
         for idx, (png, ts) in enumerate(frames):
             next_ts = (
                 frames[idx + 1][1]
@@ -138,6 +139,16 @@ class WebmScreencastRecorder:
             w, h = img.size
             if w % 2 or h % 2:
                 img = img.resize((w - w % 2, h - h % 2), Image.Resampling.LANCZOS)
+            # Кадры одной записи могут отличаться по размеру: источник кадра
+            # переключается между способами съёмки (BiDi / CDP / классический
+            # скриншот), а во время навигации размеры вьюпорта/скриншота
+            # «плывут». `np.stack` требует одинаковой формы, иначе кодирование
+            # падает с "all input arrays must have the same shape" и запись
+            # теряется целиком. Приводим все кадры к размеру первого.
+            if target_size is None:
+                target_size = img.size
+            elif img.size != target_size:
+                img = img.resize(target_size, Image.Resampling.LANCZOS)
             arr = np.asarray(img)
             rgb_frames.extend([arr] * repeat)
 

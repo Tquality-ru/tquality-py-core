@@ -94,6 +94,35 @@ def test_source_exceptions_are_swallowed() -> None:
     assert payload is not None
 
 
+def test_frames_of_varying_size_still_encode() -> None:
+    # Источник кадра может переключаться между способами съёмки (BiDi / CDP /
+    # классический скриншот) и во время навигации отдавать кадры разного
+    # размера. `np.stack` требует одинаковой формы, поэтому раньше запись с
+    # разноразмерными кадрами падала на кодировании и терялась целиком.
+    sizes: Iterator[tuple[int, int]] = iter([
+        (32, 24), (32, 24), (40, 30), (28, 20),
+    ])
+
+    def src() -> bytes:
+        try:
+            width, height = next(sizes)
+        except StopIteration:
+            width, height = 32, 24
+        return _make_png(width, height)
+
+    rec = WebmScreencastRecorder(
+        frame_source=src,
+        frame_interval=0.05,
+        output_fps=5,
+    )
+    rec.start()
+    time.sleep(0.35)
+    payload = rec.stop()
+
+    assert payload is not None
+    assert payload[:4] == b"\x1aE\xdf\xa3"
+
+
 def test_max_duration_caps_capture() -> None:
     src = Mock(return_value=_make_png())
     rec = WebmScreencastRecorder(
