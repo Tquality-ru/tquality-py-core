@@ -18,9 +18,10 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 import allure
+from typing_extensions import deprecated
 
 from tquality_core.models.config import LoggingConfig, LogLevelName, LogStream
 
@@ -243,21 +244,6 @@ class Step:
         return wrapper
 
 
-def _get_test_node_id() -> str:
-    """Сформировать безопасное для файловой системы имя из pytest node ID.
-
-    ASCII-only, с MD5-хэшем для уникальности при не-ASCII параметрах.
-    """
-    current = os.environ.get("PYTEST_CURRENT_TEST", "")
-    if not current:
-        return "unknown"
-    node_id = re.sub(r"\s+\(.*\)$", "", current)
-    ascii_part = re.sub(r"[^a-zA-Z0-9_\-]", "_", node_id)
-    ascii_part = re.sub(r"_+", "_", ascii_part).strip("_")
-    node_hash = hashlib.md5(node_id.encode()).hexdigest()[:8]
-    return f"{ascii_part[:80]}_{node_hash}"
-
-
 class Logger:
     """Логгер на один контекст теста с отдельным файловым обработчиком.
 
@@ -284,7 +270,7 @@ class Logger:
 
         self._started_at = datetime.now()
         timestamp = self._started_at.strftime("%Y%m%d_%H%M%S")
-        node_id = _get_test_node_id()
+        node_id = self._test_node_id()
 
         log_cfg: LoggingConfig = getattr(config, "logging", None) or LoggingConfig()
         self._log_dir = Path(config.log_dir)
@@ -477,44 +463,79 @@ class Logger:
         """Снимок стека активных шагов от outermost к innermost."""
         return self._step_stack
 
+    # ── реестр активного Logger ──────────────────────────────────────────────
+    #: Резолвер активного Logger. Заполняется автоматически: `CoreServicesABC`
+    #: в `__init_subclass__` связывает его со своим `logger`-провайдером.
+    _resolver: ClassVar[Callable[[], Logger] | None] = None
 
-_logger_resolver: Callable[[], Logger] | None = None
+    @classmethod
+    def _set_resolver(cls, resolver: Callable[[], Logger] | None) -> None:
+        """Зарегистрировать резолвер активного Logger.
+
+        Protected НАМЕРЕННО: это внутренний шов между DI-слоем и Logger, а не
+        публичный шаг настройки. Единственный штатный вызов - авто-регистрация
+        в `CoreServicesABC.__init_subclass__` (`di`→`services`, без обратного
+        импорта). Publicly объявлять его нельзя - иначе выглядит как API,
+        который «надо не забыть вызвать»; на деле любой контейнер-наследник
+        регистрируется сам. Тесты, подменяющие активный Logger, зовут его
+        напрямую как protected."""
+        cls._resolver = resolver
+
+    @classmethod
+    def resolve(cls) -> Logger:
+        """Активный Logger; бросает, если ни один контейнер ещё не объявлен."""
+        if cls._resolver is None:
+            raise RuntimeError(
+                "Активный Logger не зарегистрирован: объявите контейнер-наследник "
+                "`CoreServicesABC` (например, `CoreServices`) - он регистрируется сам.",
+            )
+        return cls._resolver()
+
+    @classmethod
+    def current(cls) -> Logger | None:
+        """Активный Logger либо None, если резолвер не задан.
+
+        В отличие от `resolve()` не бросает - для опциональных интеграций,
+        которые логируют только когда логирование настроено.
+        """
+        return cls._resolver() if cls._resolver is not None else None
+
+    @staticmethod
+    def _test_node_id() -> str:
+        """Сформировать безопасное для файловой системы имя из pytest node ID.
+
+        ASCII-only, с MD5-хэшем для уникальности при не-ASCII параметрах.
+        """
+        current = os.environ.get("PYTEST_CURRENT_TEST", "")
+        if not current:
+            return "unknown"
+        node_id = re.sub(r"\s+\(.*\)$", "", current)
+        ascii_part = re.sub(r"[^a-zA-Z0-9_\-]", "_", node_id)
+        ascii_part = re.sub(r"_+", "_", ascii_part).strip("_")
+        node_hash = hashlib.md5(node_id.encode()).hexdigest()[:8]
+        return f"{ascii_part[:80]}_{node_hash}"
 
 
-def set_logger_resolver(resolver: Callable[[], Logger] | None) -> None:
-    """Зарегистрировать способ получения активного Logger из любого места.
-
-    Обычно связывается с провайдером DI-контейнера (например, `Container.logger`).
-    """
-    global _logger_resolver
-    _logger_resolver = resolver
-
-
-def _resolve_logger() -> Logger:
-    if _logger_resolver is None:
-        raise RuntimeError("Резолвер логгера не зарегистрирован. Вызовите set_logger_resolver() при настройке.")
-    return _logger_resolver()
+@deprecated(
+    "set_logger_resolver больше не нужен и ничего не делает: активный Logger "
+    "разрешается внутренней логикой DI-контейнера (`CoreServices.logger` через "
+    "`Delegate`). Заглушка оставлена как временный слой совместимости - удалите вызов.",
+)
+def set_logger_resolver(resolver: Callable[[], Logger] | None = None) -> None:
+    """No-op-заглушка совместимости: разрешение активного Logger теперь забота
+    DI-контейнера, а не глобального резолвера. Ничего не делает."""
 
 
-def current_logger() -> Logger | None:
-    """Активный `Logger` через зарегистрированный резолвер (тот же, что пишет логи в шаги),
-    либо `None`, если резолвер не задан.
+class step:  # noqa: N801 - lowercase: используется как декоратор/CM (`@step(...)`, `with step(...)`)
+    """Ленивый шаг: резолвит активный `Logger` в момент входа (`with`) или
+    вызова обёрнутой функции (декоратор), а не при создании.
 
-    В отличие от внутреннего разрешения шагов не бросает исключение - для
-    опциональных интеграций, которые логируют только когда логирование настроено.
-    """
-    return _logger_resolver() if _logger_resolver is not None else None
-
-
-class _LazyStep:
-    """Ленивый шаг уровня модуля: резолвит активный `Logger` в момент входа
-    (`with`) или вызова обёрнутой функции (`@step`), а не при создании.
-
-    Критично для `@step(...)` на тестовом методе: декоратор применяется на
-    импорте, когда активного теста (и его `Logger`) ещё нет. Раннее разрешение
-    построило бы `Logger` на импорте - с неверным именем (`unknown`, т.к.
-    `PYTEST_CURRENT_TEST` ещё не выставлен) и не тем экземпляром. Ленивое
-    разрешение откладывает создание `Step` и `Logger` до прогона теста.
+    Критично при использовании декоратором на тестовом методе: декоратор
+    применяется на импорте, когда активного теста (и его `Logger`) ещё нет.
+    Раннее разрешение построило бы `Logger` на импорте - с неверным именем
+    (`unknown`, т.к. `PYTEST_CURRENT_TEST` ещё не выставлен) и не тем
+    экземпляром. Ленивое разрешение откладывает создание `Step` и `Logger` до
+    прогона теста.
     """
 
     def __init__(self, title: str, level: LogLevel = LogLevel.NORMAL) -> None:
@@ -523,7 +544,7 @@ class _LazyStep:
         self._active: Step | None = None
 
     def __enter__(self) -> Step:
-        self._active = _resolve_logger().step(self.title, level=self.level)
+        self._active = Logger.resolve().step(self.title, level=self.level)
         return self._active.__enter__()
 
     def __exit__(
@@ -539,18 +560,7 @@ class _LazyStep:
     def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            with _resolve_logger().step(self.title, level=self.level):
+            with Logger.resolve().step(self.title, level=self.level):
                 return func(*args, **kwargs)
 
         return wrapper
-
-
-def step(title: str, level: LogLevel = LogLevel.NORMAL) -> _LazyStep:
-    """Фабрика шагов уровня модуля (ленивая).
-
-    Резолвит активный `Logger` лениво - на входе в `with` или при вызове
-    функции, обёрнутой `@step(...)`, - а не при создании. Поэтому `@step` можно
-    вешать на тестовые методы: `Logger` строится во время прогона, с верным
-    именем теста.
-    """
-    return _LazyStep(title, level=level)

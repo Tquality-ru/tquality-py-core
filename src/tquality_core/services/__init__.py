@@ -4,7 +4,7 @@ from tquality_core.services.logger import (
     LogLevel,
     ScreencastProvider,
     ScreenshotProvider,
-    set_logger_resolver,
+    set_logger_resolver,  # ty: ignore[deprecated] - намеренный ре-экспорт deprecated-заглушки
     step,
 )
 from tquality_core.services.resolved_waiter import ResolvedWaiter
