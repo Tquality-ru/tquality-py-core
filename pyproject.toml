@@ -70,7 +70,7 @@ tquality_core_per_test_files = "tquality_core.plugins.per_test_files"
 
 [dependency-groups]
 dev = [
-    "ty>=0.0.54",
+    "ty>=0.0.58",
     "ruff>=0.14.0"
 ]
 

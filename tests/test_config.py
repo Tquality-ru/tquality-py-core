@@ -42,7 +42,7 @@ def test_constructor_overrides_defaults(
     search_dir: SearchDir,
 ) -> None:
     search_dir(tmp_path)
-    cfg = BaseConfig(base_url="https://example.com", waiter={"timeout": 5.0})  # ty:ignore[invalid-argument-type]
+    cfg = BaseConfig(base_url="https://example.com", waiter={"timeout": 5.0})
     assert cfg.base_url == "https://example.com"
     assert cfg.waiter.timeout == 5.0
 
