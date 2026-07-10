@@ -21,7 +21,7 @@ provider, фабрики элементов, driver-waiter), переопред�
 перевязывает унаследованный `waiter` на переопределённый `logger` (`Delegate`
 начинает указывать на новый провайдер, без ПЕРЕобъявления `waiter`).
 
-Активный Logger для standalone-`step` / `Logger.current()`: авто-регистрация
+Активный Logger для standalone-`step` / `step.current()`: авто-регистрация
 живёт в `CoreServicesABC` (см. `core_services_abc.py`) - `__init_subclass__`
 регистрирует свежеобъявленный контейнер как активный источник, «залинкованный
 последним» выигрывает. `CoreServices` наследует это, ничего не делая.

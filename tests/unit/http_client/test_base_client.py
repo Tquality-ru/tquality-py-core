@@ -17,7 +17,7 @@ from requests.cookies import RequestsCookieJar
 from urllib3.util.retry import Retry
 
 from tquality_core.http_client import BaseClient, Headers, RequestArgsDict, TimeoutHTTPAdapter
-from tquality_core.services.logger import Logger
+from tquality_core.services.logger import Logger, step
 
 
 class _SpyLogger:
@@ -183,17 +183,17 @@ class TestSessionConfiguration:
 def step_logger() -> Iterator[_SpyLogger]:
     """Регистрирует резолвер логгера шагов на время теста и снимает после."""
     spy = _SpyLogger()
-    Logger._set_resolver(lambda: cast(Logger, spy))
+    step._set_resolver(lambda: cast(Logger, spy))
     yield spy
-    Logger._set_resolver(None)
+    step._set_resolver(None)
 
 
 @pytest.fixture
 def without_logger_resolver() -> Iterator[None]:
     """Гарантирует отсутствие резолвера (изоляция от глобального состояния)."""
-    Logger._set_resolver(None)
+    step._set_resolver(None)
     yield
-    Logger._set_resolver(None)
+    step._set_resolver(None)
 
 
 class TestLogging:

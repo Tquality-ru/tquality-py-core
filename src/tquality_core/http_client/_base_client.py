@@ -11,7 +11,7 @@ from tquality_core.http_client._headers import Headers
 from tquality_core.http_client._request_args_dict import RequestArgsDict
 from tquality_core.http_client._response import ApiResponse, ModelType
 from tquality_core.http_client._timeout_http_adapter import Timeout, TimeoutHTTPAdapter
-from tquality_core.services.logger import Logger
+from tquality_core.services.logger import Logger, step
 
 
 class BaseClient:
@@ -76,7 +76,7 @@ class BaseClient:
         """Логирует через подключённый Logger; если он не задан — через активный
         логгер шагов (если резолвер настроен); иначе no-op. Заголовки и тело
         намеренно не пишем, чтобы не утекали токены/секреты."""
-        logger = self._logger or Logger.current()
+        logger = self._logger or step.current()
         if logger is not None:
             logger.info(message, *args)
 

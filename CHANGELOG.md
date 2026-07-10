@@ -22,10 +22,12 @@
 
 - **Убран module-level код из `services/logger.py`** (правило «No Module-Level
   Code»): свободные функции свёрнуты на классы. `_get_test_node_id` →
-  `Logger._test_node_id` (staticmethod); глобальный резолвер → classmethod'ы
-  `Logger` (`resolve` / `current` + protected `_set_resolver` + ClassVar
-  `_resolver`); `step` теперь класс (lowercase - декоратор/CM, как `property`),
-  а не функция-фабрика над приватным `_LazyStep`.
+  `Logger._test_node_id` (staticmethod); `step` теперь класс (lowercase -
+  декоратор/CM, как `property`), а не функция-фабрика над приватным `_LazyStep`.
+- **Реестр активного Logger переехал с `Logger` на класс `step`** (`resolve` /
+  `current` + protected `_set_resolver` + ClassVar `_resolver`): «какой Logger
+  активен» - вопрос потребителя (`step` и опциональные интеграции), а не
+  per-test экземпляра `Logger`.
 
 ### Устарело
 

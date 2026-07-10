@@ -463,43 +463,6 @@ class Logger:
         """Снимок стека активных шагов от outermost к innermost."""
         return self._step_stack
 
-    # ── реестр активного Logger ──────────────────────────────────────────────
-    #: Резолвер активного Logger. Заполняется автоматически: `CoreServicesABC`
-    #: в `__init_subclass__` связывает его со своим `logger`-провайдером.
-    _resolver: ClassVar[Callable[[], Logger] | None] = None
-
-    @classmethod
-    def _set_resolver(cls, resolver: Callable[[], Logger] | None) -> None:
-        """Зарегистрировать резолвер активного Logger.
-
-        Protected НАМЕРЕННО: это внутренний шов между DI-слоем и Logger, а не
-        публичный шаг настройки. Единственный штатный вызов - авто-регистрация
-        в `CoreServicesABC.__init_subclass__` (`di`→`services`, без обратного
-        импорта). Publicly объявлять его нельзя - иначе выглядит как API,
-        который «надо не забыть вызвать»; на деле любой контейнер-наследник
-        регистрируется сам. Тесты, подменяющие активный Logger, зовут его
-        напрямую как protected."""
-        cls._resolver = resolver
-
-    @classmethod
-    def resolve(cls) -> Logger:
-        """Активный Logger; бросает, если ни один контейнер ещё не объявлен."""
-        if cls._resolver is None:
-            raise RuntimeError(
-                "Активный Logger не зарегистрирован: объявите контейнер-наследник "
-                "`CoreServicesABC` (например, `CoreServices`) - он регистрируется сам.",
-            )
-        return cls._resolver()
-
-    @classmethod
-    def current(cls) -> Logger | None:
-        """Активный Logger либо None, если резолвер не задан.
-
-        В отличие от `resolve()` не бросает - для опциональных интеграций,
-        которые логируют только когда логирование настроено.
-        """
-        return cls._resolver() if cls._resolver is not None else None
-
     @staticmethod
     def _test_node_id() -> str:
         """Сформировать безопасное для файловой системы имя из pytest node ID.
@@ -536,7 +499,48 @@ class step:  # noqa: N801 - lowercase: используется как деко�
     (`unknown`, т.к. `PYTEST_CURRENT_TEST` ещё не выставлен) и не тем
     экземпляром. Ленивое разрешение откладывает создание `Step` и `Logger` до
     прогона теста.
+
+    Здесь же живёт РЕЕСТР активного Logger (`resolve`/`current` + protected
+    `_set_resolver`): «какой Logger активен» - вопрос композиции, а не самого
+    `Logger` (тот - per-test экземпляр), и нужен именно потребителю - `step` и
+    опциональным интеграциям. Публичный контракт `step` - только сигнатура
+    `(title, level)`; резолвер «абстрактный» - его выставляет DI-контейнер
+    (`CoreServicesABC` авто-регистрируется), до этого `resolve()` бросает.
     """
+
+    #: Резолвер активного Logger. Заполняется автоматически: `CoreServicesABC`
+    #: в `__init_subclass__` связывает его со своим `logger`-провайдером.
+    _resolver: ClassVar[Callable[[], Logger] | None] = None
+
+    @classmethod
+    def _set_resolver(cls, resolver: Callable[[], Logger] | None) -> None:
+        """Зарегистрировать резолвер активного Logger.
+
+        Protected НАМЕРЕННО: внутренний шов между DI-слоем и `step`, а не
+        публичный шаг настройки. Штатный вызов один - авто-регистрация в
+        `CoreServicesABC.__init_subclass__` (`di`→`services`, без обратного
+        импорта). Publicly объявлять нельзя - иначе выглядит как API, «который
+        надо не забыть вызвать»; на деле любой контейнер-наследник регистрируется
+        сам. Тесты, подменяющие активный Logger, зовут его напрямую как
+        protected."""
+        cls._resolver = resolver
+
+    @classmethod
+    def resolve(cls) -> Logger:
+        """Активный Logger; бросает, если ни один контейнер ещё не объявлен."""
+        if cls._resolver is None:
+            raise RuntimeError(
+                "Активный Logger не зарегистрирован: объявите контейнер-наследник "
+                "`CoreServicesABC` (например, `CoreServices`) - он регистрируется сам.",
+            )
+        return cls._resolver()
+
+    @classmethod
+    def current(cls) -> Logger | None:
+        """Активный Logger либо None - для опциональных интеграций, которые
+        логируют только когда логирование настроено (не бросает, в отличие от
+        `resolve()`)."""
+        return cls._resolver() if cls._resolver is not None else None
 
     def __init__(self, title: str, level: LogLevel = LogLevel.NORMAL) -> None:
         self.title = title
@@ -544,7 +548,7 @@ class step:  # noqa: N801 - lowercase: используется как деко�
         self._active: Step | None = None
 
     def __enter__(self) -> Step:
-        self._active = Logger.resolve().step(self.title, level=self.level)
+        self._active = step.resolve().step(self.title, level=self.level)
         return self._active.__enter__()
 
     def __exit__(
@@ -560,7 +564,7 @@ class step:  # noqa: N801 - lowercase: используется как деко�
     def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> Any:
-            with Logger.resolve().step(self.title, level=self.level):
+            with step.resolve().step(self.title, level=self.level):
                 return func(*args, **kwargs)
 
         return wrapper
