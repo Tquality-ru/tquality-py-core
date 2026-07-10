@@ -1,4 +1,5 @@
 """Тесты генерации JSON-схемы конфига."""
+
 # ruff: noqa - тестовый файл, длинные строки OK
 from __future__ import annotations
 
@@ -16,14 +17,10 @@ def test_committed_schema_matches_base_config() -> None:
     обновленный schema/config.schema.json.
     """
     repo_root = Path(__file__).resolve().parent.parent
-    committed = json.loads(
-        (repo_root / "schema" / "config.schema.json").read_text(encoding="utf-8")
-    )
+    committed = json.loads((repo_root / "schema" / "config.schema.json").read_text(encoding="utf-8"))
     current = generate_schema()
 
-    assert committed == current, (
-        "Коммиченная схема устарела. Запустите `tquality-config schema`."
-    )
+    assert committed == current, "Коммиченная схема устарела. Запустите `tquality-config schema`."
 
 
 def test_schema_url_resolves_to_master_on_dev_install() -> None:

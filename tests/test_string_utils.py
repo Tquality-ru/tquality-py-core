@@ -1,4 +1,5 @@
 """Тесты для StringUtils."""
+
 from __future__ import annotations
 
 from tquality_core import StringUtils

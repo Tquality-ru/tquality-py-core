@@ -59,12 +59,18 @@ class JSActions(BaseJSActions):
         return list(self.execute_script(CommonJSScripts.GET_ELEMENTS_FROM_POINT, x, y))
 
     def get_pseudo_element_style(
-        self, selector: str, pseudo: PseudoElement, property_name: str,
+        self,
+        selector: str,
+        pseudo: PseudoElement,
+        property_name: str,
     ) -> str | None:
         """Вычисленный стиль псевдоэлемента (`::before` и т.п.) у первого
         элемента под `selector`; `None`, если элемент не найден."""
         result = self.execute_script(
-            CommonJSScripts.GET_PSEUDO_ELEMENT_STYLE, selector, pseudo, property_name,
+            CommonJSScripts.GET_PSEUDO_ELEMENT_STYLE,
+            selector,
+            pseudo,
+            property_name,
         )
         return None if result is None else str(result)
 
@@ -92,7 +98,9 @@ class JSActions(BaseJSActions):
         self.execute_script(CommonJSScripts.SCROLL_WINDOW_BY, x, y)
 
     def scroll_to_bottom_infinite(
-        self, timeout: float | None = None, polling_interval: float | None = None,
+        self,
+        timeout: float | None = None,
+        polling_interval: float | None = None,
     ) -> None:
         """Доскроллить «бесконечную» ленту до конца: скроллит вниз и ждёт, пока
         DOM не перестанет меняться `polling_interval` секунд (или до `timeout`).
@@ -101,12 +109,9 @@ class JSActions(BaseJSActions):
         скрипту передаются в миллисекундах в порядке `(quietPeriod, timeoutMs)`.
         Async-executor дописывает callback завершения последним аргументом."""
         timeout = timeout if timeout is not None else self._config.waiter.timeout
-        polling_interval = (
-            polling_interval if polling_interval is not None
-            else self._config.waiter.poll_interval
-        )
+        polling_interval = polling_interval if polling_interval is not None else self._config.waiter.poll_interval
         self.execute_async_script(
             CommonJSScripts.SCROLL_TO_BOTTOM_INFINITE,
             polling_interval * 1000,  # quietPeriod (мс)
-            timeout * 1000,           # timeoutMs (мс)
+            timeout * 1000,  # timeoutMs (мс)
         )

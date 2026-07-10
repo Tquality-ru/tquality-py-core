@@ -29,6 +29,7 @@ register_per_test_rebuilder(_rebuild_for_test)
 перестраивать сервис только если есть свой `capabilities.json5` в
 поддереве).
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable

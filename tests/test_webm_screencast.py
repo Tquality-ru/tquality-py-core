@@ -1,4 +1,5 @@
 """Тесты `WebmScreencastRecorder` - background-захват PNG + склейка в webm."""
+
 from __future__ import annotations
 
 import io
@@ -11,6 +12,7 @@ from tquality_core import WebmScreencastRecorder
 
 def _make_png(width: int = 16, height: int = 16) -> bytes:
     from PIL import Image
+
     img = Image.new("RGB", (width, height), color=(120, 30, 200))
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -74,11 +76,13 @@ def test_double_start_is_noop() -> None:
 
 
 def test_source_exceptions_are_swallowed() -> None:
-    sequence: Iterator[bytes | Exception] = iter([
-        RuntimeError("transient blip"),
-        _make_png(),
-        _make_png(),
-    ])
+    sequence: Iterator[bytes | Exception] = iter(
+        [
+            RuntimeError("transient blip"),
+            _make_png(),
+            _make_png(),
+        ]
+    )
 
     def src() -> bytes:
         item = next(sequence)
@@ -99,9 +103,14 @@ def test_frames_of_varying_size_still_encode() -> None:
     # классический скриншот) и во время навигации отдавать кадры разного
     # размера. `np.stack` требует одинаковой формы, поэтому раньше запись с
     # разноразмерными кадрами падала на кодировании и терялась целиком.
-    sizes: Iterator[tuple[int, int]] = iter([
-        (32, 24), (32, 24), (40, 30), (28, 20),
-    ])
+    sizes: Iterator[tuple[int, int]] = iter(
+        [
+            (32, 24),
+            (32, 24),
+            (40, 30),
+            (28, 20),
+        ]
+    )
 
     def src() -> bytes:
         try:

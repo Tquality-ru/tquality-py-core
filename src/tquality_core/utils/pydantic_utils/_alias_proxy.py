@@ -22,7 +22,7 @@ class _AliasProxy(_NameProxy):
         object.__setattr__(self, "_kind", kind)
 
     @override
-    def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> '_AliasProxy':
+    def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> "_AliasProxy":
         return _AliasProxy(submodel, object.__getattribute__(self, "_kind"))
 
     @override

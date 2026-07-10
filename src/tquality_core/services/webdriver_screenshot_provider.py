@@ -5,6 +5,7 @@ selenium-WebDriver, appium-WebDriver, undetected-chromedriver и т.п.
 Резолвер драйвера и проверка доступности инжектятся через конструктор -
 сам класс не знает о DI-контейнере и о том, откуда берётся сессия.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable

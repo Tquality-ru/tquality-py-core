@@ -20,6 +20,7 @@ main = build_cli(
 )
 ```
 """
+
 from __future__ import annotations
 
 import argparse
@@ -35,7 +36,8 @@ from tquality_core.utils.path_utils import PathUtils
 
 
 def _default_config_dict(
-    config_cls: type[BaseConfig], schema_url: str,
+    config_cls: type[BaseConfig],
+    schema_url: str,
 ) -> dict[str, Any]:
     """Словарь значений по умолчанию `config_cls` со ссылкой на схему."""
     cfg = config_cls()
@@ -45,7 +47,8 @@ def _default_config_dict(
 
 
 def _make_init(
-    config_cls: type[BaseConfig], schema_url: str,
+    config_cls: type[BaseConfig],
+    schema_url: str,
 ) -> Callable[[argparse.Namespace], int]:
     def cmd_init(args: argparse.Namespace) -> int:
         target_dir = Path(args.path).resolve() if args.path else (PathUtils.find_project_root() or Path.cwd())
@@ -53,8 +56,7 @@ def _make_init(
 
         if target_file.exists() and not args.force:
             print(
-                f"Файл уже существует: {target_file}. "
-                f"Используйте --force для перезаписи.",
+                f"Файл уже существует: {target_file}. Используйте --force для перезаписи.",
                 file=sys.stderr,
             )
             return 1
@@ -64,7 +66,8 @@ def _make_init(
                 _default_config_dict(config_cls, schema_url),
                 indent=4,
                 ensure_ascii=False,
-            ) + "\n",
+            )
+            + "\n",
             encoding="utf-8",
         )
         print(f"Создан {target_file}")
@@ -74,7 +77,8 @@ def _make_init(
 
 
 def _make_schema(
-    config_cls: type[BaseConfig], schema_url: str,
+    config_cls: type[BaseConfig],
+    schema_url: str,
 ) -> Callable[[argparse.Namespace], int]:
     def cmd_schema(args: argparse.Namespace) -> int:
         target_dir = Path(args.path).resolve() if args.path else (PathUtils.find_project_root() or Path.cwd())
@@ -120,8 +124,7 @@ def build_cli(
         )
         p_init.add_argument(
             "--path",
-            help="Каталог, в котором создать config.json5 "
-                 "(по умолчанию - корень проекта)",
+            help="Каталог, в котором создать config.json5 (по умолчанию - корень проекта)",
         )
         p_init.add_argument(
             "--force",

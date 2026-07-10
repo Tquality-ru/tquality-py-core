@@ -24,6 +24,7 @@ cell = element_factory.formattable.label(
 cell.format(row=42, col=3).text     # //tr[@data-id=42]/td[3]
 ```
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Generic, override

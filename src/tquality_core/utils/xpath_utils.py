@@ -5,6 +5,7 @@
 relative-xpath перед конкатенацией, так и для безопасного квотирования
 значений в xpath-предикатах.
 """
+
 from __future__ import annotations
 
 
@@ -44,4 +45,4 @@ class XPathUtils:
         if '"' not in value:
             return f'"{value}"'
         parts = (f"'{p}'" for p in value.split("'"))
-        return "concat(" + ", \"'\", ".join(parts) + ")"
+        return "concat(" + ', "\'", '.join(parts) + ")"

@@ -15,6 +15,7 @@ AppiumDriverService.
 Между итерациями кэш не переиспользуется. Одиночный индексный доступ
 `collection[i]` всегда делает свежий resolve.
 """
+
 from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
@@ -57,10 +58,7 @@ class LazyElements[E](Sequence[E]):
     def __getitem__(self, index: int | slice) -> E | list[E]:
         if isinstance(index, slice):
             snapshot = self._driver.find_elements(*self._by)
-            return [
-                self._make(i, snapshot)
-                for i in range(*index.indices(len(snapshot)))
-            ]
+            return [self._make(i, snapshot) for i in range(*index.indices(len(snapshot)))]
         if index < 0:
             index += len(self)
         return self._make(index)
@@ -79,6 +77,7 @@ class LazyElements[E](Sequence[E]):
         by = self._by
 
         if snapshot is None:
+
             def _find() -> Any:
                 return self._driver.find_elements(*by)[index]
         else:

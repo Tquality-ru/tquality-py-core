@@ -1,4 +1,5 @@
 """Утилиты работы со строками."""
+
 from __future__ import annotations
 
 import re

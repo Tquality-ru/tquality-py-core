@@ -4,6 +4,7 @@
 Инварианты вынесены в `_assert_*`-хелперы, поэтому позитивные тесты (реальные
 реестры согласованы) и негативные (на сломанных данных проверка падает) гоняют
 один и тот же код-алерт - негатив гарантирует, что позитив реально что-то ловит."""
+
 from __future__ import annotations
 
 import inspect
@@ -42,6 +43,7 @@ def _assert_every_script_covered(registered: set[str], referenced: set[str], ctx
 
 # ── позитив: реальные реестры и файлы согласованы ────────────────────────────
 
+
 @pytest.mark.parametrize(
     ("registry_cls", "subdir"),
     [
@@ -54,9 +56,7 @@ def test_all_js_files_registered(registry_cls: type, subdir: str) -> None:
     множеством записей реестра: ни «забытого» файла, ни записи без файла."""
     registered = {getattr(registry_cls, name).name for name in _registry_names(registry_cls)}
     on_disk = {
-        child.name
-        for child in PathUtils.get_js_scripts_dir().joinpath(subdir).iterdir()
-        if child.name.endswith(".js")
+        child.name for child in PathUtils.get_js_scripts_dir().joinpath(subdir).iterdir() if child.name.endswith(".js")
     }
     _assert_registry_matches_disk(registered, on_disk, registry_cls.__name__)
 
@@ -69,7 +69,9 @@ def test_all_js_files_registered(registry_cls: type, subdir: str) -> None:
     ],
 )
 def test_every_script_has_wrapper_method(
-    service_cls: type, registry_cls: type, registry_name: str,
+    service_cls: type,
+    registry_cls: type,
+    registry_name: str,
 ) -> None:
     """Каждая запись реестра используется в коде сервиса-обёртки (есть метод,
     дергающий `Registry.<NAME>`)."""
@@ -79,6 +81,7 @@ def test_every_script_has_wrapper_method(
 
 
 # ── негатив: те же проверки реально срабатывают на сломанных данных ───────────
+
 
 def test_orphan_script_file_is_detected() -> None:
     """`.js`-файл без записи в реестре - проверка целостности падает."""

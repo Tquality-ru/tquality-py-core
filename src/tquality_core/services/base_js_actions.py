@@ -37,7 +37,9 @@ class BaseJSActions:
 
     def execute_async_script(self, script: Script, *args: Any) -> Any:
         return self._async_execute_js(
-            self._to_source(script), *self._prefix_args(), *args,
+            self._to_source(script),
+            *self._prefix_args(),
+            *args,
         )
 
     def execute_global_script(self, script: Script, *args: Any) -> Any:

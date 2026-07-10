@@ -1,5 +1,6 @@
 """Тесты per-test pytest-плагина: вызов rebuilder'ов с директорией теста
 на setup и проигрывание teardown'ов (в обратном порядке) на teardown."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -56,6 +57,7 @@ def test_teardowns_run_in_reverse_order(tmp_path: Path) -> None:
     order: list[int] = []
 
     for n in (1, 2, 3):
+
         def make(n: int) -> ptf.Rebuilder:
             return lambda _test_dir: lambda: order.append(n)
 

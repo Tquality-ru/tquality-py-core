@@ -2,6 +2,7 @@
 
 Конкретный эндпоинт - jsonplaceholder.typicode.com.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable

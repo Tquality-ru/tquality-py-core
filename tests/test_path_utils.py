@@ -1,4 +1,5 @@
 """Тесты PathUtils.find_upwards и границ обхода."""
+
 from __future__ import annotations
 
 from pathlib import Path

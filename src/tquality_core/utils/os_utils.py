@@ -4,6 +4,7 @@
 браузеры под Selenium, какие платформы и драйверы под Appium) живут
 в соответствующих пакетах и используют эти проверки.
 """
+
 from __future__ import annotations
 
 import sys

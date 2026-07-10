@@ -3,6 +3,7 @@
 Публичный - дочерние пакеты (`tquality-py-selenium`, `tquality-py-appium`)
 переиспользуют его в `settings_customise_sources` своих `*Config`.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

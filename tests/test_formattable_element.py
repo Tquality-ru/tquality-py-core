@@ -1,4 +1,5 @@
 """Тесты для FormattableElement (шаблонный элемент с параметризуемым локатором)."""
+
 from __future__ import annotations
 
 from typing import Any, Self, override
@@ -21,29 +22,46 @@ class _Impl(BaseElement):
 
     @property
     @override
-    def name(self) -> str: return self._name
+    def name(self) -> str:
+        return self._name
+
     @property
     @override
-    def by(self) -> BaseBy: return self._by
+    def by(self) -> BaseBy:
+        return self._by
+
     @property
     @override
-    def text(self) -> str: return ""
+    def text(self) -> str:
+        return ""
+
     @property
     @override
-    def is_displayed(self) -> bool: return False
+    def is_displayed(self) -> bool:
+        return False
+
     @property
     @override
-    def is_present(self) -> bool: return False
+    def is_present(self) -> bool:
+        return False
+
     @property
     @override
-    def is_enabled(self) -> bool: return False
+    def is_enabled(self) -> bool:
+        return False
+
     @property
     @override
-    def wait(self) -> Any: return None
+    def wait(self) -> Any:
+        return None
+
     @override
-    def get_attribute(self, attr: str) -> str | None: return None
+    def get_attribute(self, attr: str) -> str | None:
+        return None
+
     @override
-    def click(self) -> None: pass
+    def click(self) -> None:
+        pass
 
 
 def _template(value: str) -> FormattableElement[_Impl]:

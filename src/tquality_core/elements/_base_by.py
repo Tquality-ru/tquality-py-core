@@ -25,6 +25,7 @@ By.accessibility_id("ok")  # своё
 Конструкторы используют `cls`, поэтому на подклассе возвращают этот же
 подкласс - типизация `By.xpath(...) -> By` сохраняется автоматически.
 """
+
 from __future__ import annotations
 
 from typing import Self, override

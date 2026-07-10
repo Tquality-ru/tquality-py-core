@@ -1,4 +1,5 @@
 """Тесты для BaseConfig."""
+
 from __future__ import annotations
 
 import json
@@ -37,7 +38,8 @@ def test_defaults(tmp_path: Path, search_dir: SearchDir) -> None:
 
 
 def test_constructor_overrides_defaults(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     search_dir(tmp_path)
     cfg = BaseConfig(base_url="https://example.com", waiter={"timeout": 5.0})  # ty:ignore[invalid-argument-type]
@@ -46,7 +48,8 @@ def test_constructor_overrides_defaults(
 
 
 def test_subclass_adds_fields(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     search_dir(tmp_path)
 
@@ -61,7 +64,7 @@ def test_subclass_adds_fields(
 def _make_workspace(root: Path) -> None:
     """Создать минимальный uv workspace, чтобы _find_project_root его нашел."""
     (root / "pyproject.toml").write_text(
-        '[tool.uv.workspace]\nmembers = []\n',
+        "[tool.uv.workspace]\nmembers = []\n",
         encoding="utf-8",
     )
 
@@ -72,7 +75,8 @@ def _write_config(path: Path, data: dict[str, object]) -> None:
 
 
 def test_resolves_from_workspace_root_when_cwd_has_no_config(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
@@ -86,13 +90,17 @@ def test_resolves_from_workspace_root_when_cwd_has_no_config(
 
 
 def test_more_specific_config_wins_over_less_specific(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json5", {
-        "base_url": "https://root",
-        "waiter": {"timeout": 10.0},
-    })
+    _write_config(
+        tmp_path / "config.json5",
+        {
+            "base_url": "https://root",
+            "waiter": {"timeout": 10.0},
+        },
+    )
     sub = tmp_path / "tests" / "integration"
     _write_config(sub / "config.json5", {"base_url": "https://integration"})
     search_dir(sub)
@@ -106,33 +114,42 @@ def test_more_specific_config_wins_over_less_specific(
 
 
 def test_three_level_chain_resolves_each_field_from_closest_config(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     _make_workspace(tmp_path)
-    _write_config(tmp_path / "config.json5", {
-        "base_url": "https://root",
-        "waiter": {"timeout": 10.0, "poll_interval": 0.3},
-        "log_dir": "root-logs",
-    })
-    _write_config(tmp_path / "tests" / "config.json5", {
-        "waiter": {"timeout": 20.0},
-        "log_dir": "tests-logs",
-    })
+    _write_config(
+        tmp_path / "config.json5",
+        {
+            "base_url": "https://root",
+            "waiter": {"timeout": 10.0, "poll_interval": 0.3},
+            "log_dir": "root-logs",
+        },
+    )
+    _write_config(
+        tmp_path / "tests" / "config.json5",
+        {
+            "waiter": {"timeout": 20.0},
+            "log_dir": "tests-logs",
+        },
+    )
     leaf = tmp_path / "tests" / "integration" / "critical"
     _write_config(leaf / "config.json5", {"log_dir": "critical-logs"})
     search_dir(leaf)
 
     cfg = BaseConfig()
 
-    assert cfg.base_url == "https://root"        # только root определяет
+    assert cfg.base_url == "https://root"  # только root определяет
     # Вложенный waiter мёржится поля-в-поле через цепочку:
-    assert cfg.waiter.timeout == 20.0            # tests переопределяет root
-    assert cfg.waiter.poll_interval == 0.3       # не задан в tests - берётся из root
-    assert cfg.log_dir == "critical-logs"        # critical переопределяет всё
+    assert cfg.waiter.timeout == 20.0  # tests переопределяет root
+    assert cfg.waiter.poll_interval == 0.3  # не задан в tests - берётся из root
+    assert cfg.log_dir == "critical-logs"  # critical переопределяет всё
 
 
 def test_env_vars_override_config_files(
-    tmp_path: Path, search_dir: SearchDir, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    search_dir: SearchDir,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
@@ -145,7 +162,9 @@ def test_env_vars_override_config_files(
 
 
 def test_constructor_args_override_everything(
-    tmp_path: Path, search_dir: SearchDir, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    search_dir: SearchDir,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _make_workspace(tmp_path)
     _write_config(tmp_path / "config.json5", {"base_url": "https://root"})
@@ -158,7 +177,8 @@ def test_constructor_args_override_everything(
 
 
 def test_jsonc_comments_and_trailing_commas_supported(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     """config.json5 может содержать комментарии и висячие запятые (jsonc/json5)."""
     _make_workspace(tmp_path)
@@ -184,7 +204,8 @@ def test_jsonc_comments_and_trailing_commas_supported(
 
 
 def test_chain_stops_at_workspace_root(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     """config.json5 выше workspace root не должен читаться."""
     outer = tmp_path / "outer"
@@ -203,7 +224,8 @@ def test_chain_stops_at_workspace_root(
 
 
 def test_conda_environment_marks_workspace_root(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     """`environment.yml` (conda) - тоже маркер корня workspace: config выше
     него не читается, config в корне - читается."""
@@ -214,7 +236,8 @@ def test_conda_environment_marks_workspace_root(
     workspace = outer / "workspace"
     workspace.mkdir()
     (workspace / "environment.yml").write_text(
-        "name: demo\ndependencies:\n  - python\n", encoding="utf-8",
+        "name: demo\ndependencies:\n  - python\n",
+        encoding="utf-8",
     )
     _write_config(workspace / "config.json5", {"base_url": "https://conda-root"})
     leaf = workspace / "tests" / "e2e"
@@ -223,13 +246,14 @@ def test_conda_environment_marks_workspace_root(
 
     cfg = BaseConfig()
 
-    assert cfg.base_url == "https://conda-root"   # из корня conda-workspace
-    assert cfg.highlight_elements is True         # из leaf
+    assert cfg.base_url == "https://conda-root"  # из корня conda-workspace
+    assert cfg.highlight_elements is True  # из leaf
     # config над workspace не подхвачен.
 
 
 def test_poetry_pyproject_marks_workspace_root(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     """`pyproject.toml` с `[tool.poetry]` - маркер корня workspace."""
     outer = tmp_path / "outer"
@@ -239,7 +263,8 @@ def test_poetry_pyproject_marks_workspace_root(
     workspace = outer / "workspace"
     workspace.mkdir()
     (workspace / "pyproject.toml").write_text(
-        '[tool.poetry]\nname = "demo"\n', encoding="utf-8",
+        '[tool.poetry]\nname = "demo"\n',
+        encoding="utf-8",
     )
     _write_config(workspace / "config.json5", {"base_url": "https://poetry-root"})
     leaf = workspace / "tests"
@@ -253,7 +278,8 @@ def test_poetry_pyproject_marks_workspace_root(
 
 
 def test_chain_stops_at_project_root_without_workspace(
-    tmp_path: Path, search_dir: SearchDir,
+    tmp_path: Path,
+    search_dir: SearchDir,
 ) -> None:
     """Без uv-workspace цепочка стопает на корне проекта (`pyproject.toml`),
     а не уходит до корня ФС - config.json5 выше проекта не читается."""

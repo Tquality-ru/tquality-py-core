@@ -16,6 +16,7 @@ imageio-ffmpeg; каждый захваченный кадр повторяет�
 лениво при `stop()` - чтобы core оставался лёгким, а потребители тянули
 их в свои pyproject.toml сами.
 """
+
 from __future__ import annotations
 
 import contextvars
@@ -84,17 +85,15 @@ class WebmScreencastRecorder:
             return self._encode_webm(frames)
         except Exception as exc:  # noqa: BLE001
             _log.warning(
-                "WebmScreencastRecorder: не удалось закодировать webm: %s", exc,
+                "WebmScreencastRecorder: не удалось закодировать webm: %s",
+                exc,
             )
             return None
 
     def _capture_loop(self) -> None:
         started = time.monotonic()
         warned = False
-        while (
-            not self._stop_event.is_set()
-            and time.monotonic() - started < self._max_duration
-        ):
+        while not self._stop_event.is_set() and time.monotonic() - started < self._max_duration:
             if self._availability_check():
                 try:
                     png = self._frame_source()
@@ -104,8 +103,7 @@ class WebmScreencastRecorder:
                     if not warned:
                         warned = True
                         _log.warning(
-                            "WebmScreencastRecorder: ошибка захвата кадра, "
-                            "дальнейшие будут пропущены тихо: %s",
+                            "WebmScreencastRecorder: ошибка захвата кадра, дальнейшие будут пропущены тихо: %s",
                             exc,
                         )
             self._stop_event.wait(self._frame_interval)
@@ -121,11 +119,7 @@ class WebmScreencastRecorder:
         rgb_frames: list[Any] = []
         target_size: tuple[int, int] | None = None
         for idx, (png, ts) in enumerate(frames):
-            next_ts = (
-                frames[idx + 1][1]
-                if idx + 1 < len(frames)
-                else ts + self._frame_interval
-            )
+            next_ts = frames[idx + 1][1] if idx + 1 < len(frames) else ts + self._frame_interval
             repeat = max(1, round((next_ts - ts) / frame_tick))
 
             img = Image.open(io.BytesIO(png)).convert("RGB")

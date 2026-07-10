@@ -1,6 +1,7 @@
 """Реестр element-scope JS-скриптов: первым аргументом принимают DOM-элемент.
 Значения - `Traversable`-пути к `.js`-файлам в `assets/js_scripts`; содержимое
 читается через `.read_text()`. Page/global-scope скрипты - в `CommonJSScripts`."""
+
 from tquality_core import PathUtils
 
 

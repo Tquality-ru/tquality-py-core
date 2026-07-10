@@ -40,10 +40,10 @@ class _NameProxy:
     def _leaf(self, field: FieldInfo, name: str) -> str:
         raise NotImplementedError
 
-    def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> '_NameProxy':
+    def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> "_NameProxy":
         raise NotImplementedError
 
-    def __getattr__(self, name: str) -> 'str | _NameProxy':
+    def __getattr__(self, name: str) -> "str | _NameProxy":
         model = object.__getattribute__(self, "_model")
         try:
             field = model.model_fields[name]

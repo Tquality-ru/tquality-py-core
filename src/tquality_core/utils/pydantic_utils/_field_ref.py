@@ -11,7 +11,7 @@ class _Ref:
     def __init__(self, path: tuple[str, ...] = ()) -> None:
         object.__setattr__(self, "_path", path)
 
-    def __getattr__(self, name: str) -> '_Ref':
+    def __getattr__(self, name: str) -> "_Ref":
         path = object.__getattribute__(self, "_path")
         return _Ref((*path, name))
 

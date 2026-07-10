@@ -9,6 +9,7 @@
 `element.wait.until_visible()`, `element.wait.until_clickable()` и т.д.
 Тип `wait` платформенный, поэтому в ядре он типизирован как `Any`.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

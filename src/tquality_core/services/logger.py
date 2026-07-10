@@ -4,6 +4,7 @@
 и контекстный менеджер `step` оборачивают действия в allure-шаги. Шаги уровня
 CRITICAL делают скриншот в конце (успех или сбой) через подключаемый провайдер.
 """
+
 from __future__ import annotations
 
 import enum
@@ -91,7 +92,8 @@ class ScreencastProvider(Protocol):
 
 StepEnterHook = Callable[["Step"], None]
 StepExitHook = Callable[
-    ["Step", type[BaseException] | None, BaseException | None], None,
+    ["Step", type[BaseException] | None, BaseException | None],
+    None,
 ]
 
 
@@ -101,7 +103,10 @@ class Step:
     `title` / `level` - публичные."""
 
     def __init__(
-        self, logger: Logger, title: str, level: LogLevel = LogLevel.NORMAL,
+        self,
+        logger: Logger,
+        title: str,
+        level: LogLevel = LogLevel.NORMAL,
     ) -> None:
         self._logger = logger
         self._title = title
@@ -125,7 +130,9 @@ class Step:
                 hook(self)
             except Exception as exc:  # noqa: BLE001
                 self._logger.warning(
-                    "Step enter hook %r упал: %s", hook, exc,
+                    "Step enter hook %r упал: %s",
+                    hook,
+                    exc,
                 )
         if self._level == LogLevel.WITH_SCREENCAST:
             provider = self._logger.screencast_provider
@@ -163,7 +170,9 @@ class Step:
                     hook(self, exc_type, exc_val)
                 except Exception as exc:  # noqa: BLE001
                     self._logger.warning(
-                        "Step exit hook %r упал: %s", hook, exc,
+                        "Step exit hook %r упал: %s",
+                        hook,
+                        exc,
                     )
         finally:
             stack = self._logger._step_stack
@@ -185,10 +194,7 @@ class Step:
                 "CRITICAL: сессия драйвера неактивна, пропускаю скриншот",
             )
             return
-        label = (
-            f"Скриншот [СБОЙ]: {self._title}"
-            if failed else f"Скриншот: {self._title}"
-        )
+        label = f"Скриншот [СБОЙ]: {self._title}" if failed else f"Скриншот: {self._title}"
         try:
             png = provider.capture()
         except Exception:  # noqa: BLE001
@@ -200,15 +206,15 @@ class Step:
         provider = self._logger.screencast_provider
         if provider is None:
             self._logger.warning(
-                "WITH_SCREENCAST: ScreencastProvider не зарегистрирован, "
-                "пропускаю прикрепление записи",
+                "WITH_SCREENCAST: ScreencastProvider не зарегистрирован, пропускаю прикрепление записи",
             )
             return
         try:
             payload = provider.stop()
         except Exception:  # noqa: BLE001
             self._logger.warning(
-                "Не удалось остановить screencast: %s", self._title,
+                "Не удалось остановить screencast: %s",
+                self._title,
             )
             return
         if not payload:
@@ -233,6 +239,7 @@ class Step:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             with self:
                 return func(*args, **kwargs)
+
         return wrapper
 
 
@@ -354,7 +361,9 @@ class Logger:
         return self._base_name
 
     def add_file_channel(
-        self, name: str, level: LogLevelName | str = LogLevelName.INFO,
+        self,
+        name: str,
+        level: LogLevelName | str = LogLevelName.INFO,
     ) -> logging.Logger:
         """Открыть вспомогательный файловый канал `<base_name>.<name>.log`.
 
@@ -417,7 +426,8 @@ class Logger:
         return Step(self, title, level=level)
 
     def register_step_enter_hook(
-        self, hook: StepEnterHook,
+        self,
+        hook: StepEnterHook,
     ) -> Callable[[], None]:
         """Зарегистрировать колбэк, вызываемый при входе в любой шаг.
 
@@ -436,7 +446,8 @@ class Logger:
         return _unregister
 
     def register_step_exit_hook(
-        self, hook: StepExitHook,
+        self,
+        hook: StepExitHook,
     ) -> Callable[[], None]:
         """Зарегистрировать колбэк, вызываемый при выходе из любого шага.
 
@@ -481,10 +492,7 @@ def set_logger_resolver(resolver: Callable[[], Logger] | None) -> None:
 
 def _resolve_logger() -> Logger:
     if _logger_resolver is None:
-        raise RuntimeError(
-            "Резолвер логгера не зарегистрирован. "
-            "Вызовите set_logger_resolver() при настройке."
-        )
+        raise RuntimeError("Резолвер логгера не зарегистрирован. Вызовите set_logger_resolver() при настройке.")
     return _logger_resolver()
 
 
@@ -533,6 +541,7 @@ class _LazyStep:
         def wrapper(*args: Any, **kwargs: Any) -> Any:
             with _resolve_logger().step(self.title, level=self.level):
                 return func(*args, **kwargs)
+
         return wrapper
 
 

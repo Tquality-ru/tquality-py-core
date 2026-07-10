@@ -31,7 +31,7 @@ class _EnvProxy(_NameProxy):
         return seg if (top and seg != name) else prefix + seg
 
     @override
-    def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> '_EnvProxy':
+    def _descend(self, submodel: type[BaseModel], field: FieldInfo, name: str) -> "_EnvProxy":
         cfg = object.__getattribute__(self, "_cfg")
         delim = cfg.get("env_nested_delimiter", "")
         if not delim:

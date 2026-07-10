@@ -1,4 +1,5 @@
 """Юнит-тесты ApiResponse: ленивый разбор тела, кэш, потокобезопасность, семантика None."""
+
 from __future__ import annotations
 
 import threading

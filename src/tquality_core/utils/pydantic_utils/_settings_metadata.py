@@ -15,6 +15,7 @@ class SettingsMetadata[T](ModelMetadata[T]):
     (`get_env_alias`, `env_map`), с учётом `env_prefix`,
     `env_nested_delimiter`, `case_sensitive` и строковых `validation_alias`.
     """
+
     def __init__(self, model_type: type[T]):
         """Принять класс-наследник `BaseSettings`.
 

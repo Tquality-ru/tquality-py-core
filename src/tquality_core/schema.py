@@ -13,6 +13,7 @@ schema_url=...)`, `write_schema_file(path, config_cls, schema_url=...)`
 переиспользуются драйверными пакетами (`tquality-py-selenium`,
 `tquality-py-appium`), чтобы не дублировать одну и ту же плиту.
 """
+
 from __future__ import annotations
 
 import importlib.metadata
@@ -46,7 +47,10 @@ def resolve_ref(package_name: str) -> str:
 
 
 def build_schema_url(
-    *, package_name: str, repo_owner: str, repo_name: str,
+    *,
+    package_name: str,
+    repo_owner: str,
+    repo_name: str,
 ) -> str:
     """Собрать публичный URL JSON-схемы для драйверного пакета.
 

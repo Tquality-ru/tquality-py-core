@@ -14,6 +14,7 @@
 (в init либо per-call). Остальные пробрасываются - пользовательский
 код видит реальные ошибки, а не молчаливые таймауты.
 """
+
 from __future__ import annotations
 
 import time
@@ -71,11 +72,7 @@ class Waiter:
           по умолчанию - те, что переданы в init. Остальные пробрасываются.
         """
         t = timeout if timeout is not None else self._config.waiter.timeout
-        poll = (
-            poll_interval
-            if poll_interval is not None
-            else self._config.waiter.poll_interval
-        )
+        poll = poll_interval if poll_interval is not None else self._config.waiter.poll_interval
         ignored = tuple(ignored_exceptions) if ignored_exceptions is not None else self._ignored
         log_msg = message or "condition"
         self._log.info("Waiting (%.1fs): %s", t, log_msg)
@@ -95,11 +92,7 @@ class Waiter:
             if now >= deadline:
                 self._log.info("Wait timed out: %s", log_msg)
                 if raise_on_timeout:
-                    exc_cls = (
-                        raise_on_timeout
-                        if isinstance(raise_on_timeout, type)
-                        else self._default_raise_cls
-                    )
+                    exc_cls = raise_on_timeout if isinstance(raise_on_timeout, type) else self._default_raise_cls
                     raise exc_cls(log_msg) from last_ignored
                 return False
             time.sleep(min(poll, max(0.0, deadline - now)))

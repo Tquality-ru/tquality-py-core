@@ -1,4 +1,5 @@
 """Общие фикстуры для юнит-тестов http_client (без сети)."""
+
 from __future__ import annotations
 
 from collections.abc import Callable

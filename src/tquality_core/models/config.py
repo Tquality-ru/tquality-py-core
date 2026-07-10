@@ -4,6 +4,7 @@
 для драйвера (тип браузера, размер окна и т.д.). Ядро определяет только
 поля, универсальные для всех драйверов.
 """
+
 from __future__ import annotations
 
 from enum import StrEnum
@@ -79,8 +80,7 @@ class LoggingConfig(BaseModel):
     file_enabled: bool = Field(
         default=True,
         description=(
-            "Писать ли лог теста в файл `<тест>.log` внутри `log_dir`. "
-            "Отключите, если нужен только консольный вывод."
+            "Писать ли лог теста в файл `<тест>.log` внутри `log_dir`. Отключите, если нужен только консольный вывод."
         ),
     )
     file_level: LogLevelName = Field(
@@ -98,18 +98,12 @@ class WaiterConfig(BaseModel):
 
     timeout: float = Field(
         default=10.0,
-        description=(
-            "Таймаут по умолчанию для explicit wait операций с элементами "
-            "(сек). Должен быть положительным."
-        ),
+        description=("Таймаут по умолчанию для explicit wait операций с элементами (сек). Должен быть положительным."),
         gt=0,
     )
     poll_interval: float = Field(
         default=0.5,
-        description=(
-            "Пауза между опросами условия в explicit wait (сек). "
-            "Должна быть положительной."
-        ),
+        description=("Пауза между опросами условия в explicit wait (сек). Должна быть положительной."),
         gt=0,
     )
 
@@ -150,17 +144,13 @@ class BaseConfig(BaseSettings):
 
     base_url: str = Field(
         default="http://localhost",
-        description=(
-            "Базовый URL тестируемого приложения. Абсолютный, со схемой "
-            "http или https."
-        ),
+        description=("Базовый URL тестируемого приложения. Абсолютный, со схемой http или https."),
         pattern=r"^https?://\S+$",
     )
     waiter: WaiterConfig = Field(
         default_factory=WaiterConfig,
         description=(
-            "Настройки explicit-waiter: таймаут ожидания (`timeout`) и "
-            "интервал опроса условия (`poll_interval`)."
+            "Настройки explicit-waiter: таймаут ожидания (`timeout`) и интервал опроса условия (`poll_interval`)."
         ),
     )
     log_dir: str = Field(
@@ -183,8 +173,7 @@ class BaseConfig(BaseSettings):
     highlight_elements: bool = Field(
         default=False,
         description=(
-            "Подсвечивать элемент красной рамкой на время взаимодействия. "
-            "Удобно при отладке и записи скринкастов."
+            "Подсвечивать элемент красной рамкой на время взаимодействия. Удобно при отладке и записи скринкастов."
         ),
     )
 
@@ -199,19 +188,20 @@ class BaseConfig(BaseSettings):
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
         sources: list[PydanticBaseSettingsSource] = [
-            init_settings, env_settings, dotenv_settings,
+            init_settings,
+            env_settings,
+            dotenv_settings,
         ]
 
         config_chain = PathUtils.resolve_path_chain(
-            PathUtils.config_search_dir(), cls.CONFIG_FILENAME,
+            PathUtils.config_search_dir(),
+            cls.CONFIG_FILENAME,
         )
 
         # Цепочка упорядочена от специфичного к общему.
         # pydantic-settings отдает приоритет источникам, идущим раньше,
         # поэтому порядок сохраняется как есть.
         for config_path in config_chain:
-            sources.append(
-                JsoncConfigSettingsSource(settings_cls, json_file=config_path)
-            )
+            sources.append(JsoncConfigSettingsSource(settings_cls, json_file=config_path))
 
         return tuple(sources)

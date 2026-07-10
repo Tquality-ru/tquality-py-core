@@ -1,4 +1,5 @@
 """Юнит-тесты модели Headers (трансформации сериализации, а не значения по умолчанию)."""
+
 from __future__ import annotations
 
 from tquality_core.http_client import ContentType, Headers

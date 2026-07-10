@@ -2,6 +2,7 @@
 и не принимают DOM-элемент аргументом. Значения - `Traversable`-пути к
 `.js`-файлам в `assets/js_scripts/document`; содержимое читается через
 `.read_text()`. Element-scope скрипты - в `CommonElementJSScripts`."""
+
 from tquality_core import PathUtils
 
 

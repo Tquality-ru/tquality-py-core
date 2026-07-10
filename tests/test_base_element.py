@@ -1,4 +1,5 @@
 """Тесты для BaseElement (абстрактный интерфейс) и BaseBy."""
+
 from __future__ import annotations
 
 from typing import Any, override

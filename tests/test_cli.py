@@ -1,4 +1,5 @@
 """Тесты для CLI-команд."""
+
 from __future__ import annotations
 
 import json
@@ -26,7 +27,8 @@ def test_init_creates_config(tmp_path: Path) -> None:
 
 
 def test_init_refuses_to_overwrite_without_force(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     config_file = tmp_path / "config.json5"
     config_file.write_text('{"base_url": "https://custom"}', encoding="utf-8")

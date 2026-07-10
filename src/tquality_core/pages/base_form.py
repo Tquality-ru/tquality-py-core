@@ -4,6 +4,7 @@ Page - частный случай Form (форма с полным контек
 для любой адресуемой UI-области: главной страницы, модального окна, шапки,
 боковой панели, попапа и т.д.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

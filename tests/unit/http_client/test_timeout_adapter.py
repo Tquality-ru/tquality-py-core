@@ -1,4 +1,5 @@
 """Юнит-тесты TimeoutHTTPAdapter: подстановка таймаута по умолчанию."""
+
 from __future__ import annotations
 
 import pytest
