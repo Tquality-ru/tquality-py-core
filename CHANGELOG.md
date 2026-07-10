@@ -3,6 +3,36 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.2.3] - 2026-07-10
+
+### Добавлено
+
+- **DI composition root `CoreServices` / `CoreServicesABC`** на
+  `static-dependency-injector`. Driver-независимый спайн: `config`
+  (`Singleton`), `logger` (testlocal `TestContextSingleton`), `waiter`
+  (`ContextLocalSingleton`, резолвит Logger через `Delegate`). Платформенные
+  пакеты наследуют и добавляют driver-bound сервисы. `CoreServicesABC`
+  (абстрактная база, слот `logger` - `Provider()`) авто-регистрирует
+  свежеобъявленный контейнер как активный источник Logger, поэтому standalone
+  `step` / `Logger.current()` находят актуальный логгер без ручной проводки
+  («залинкованный последним» контейнер выигрывает; корректно под `@copy` и
+  per-test-сбросом).
+
+### Изменено
+
+- **Убран module-level код из `services/logger.py`** (правило «No Module-Level
+  Code»): свободные функции свёрнуты на классы. `_get_test_node_id` →
+  `Logger._test_node_id` (staticmethod); глобальный резолвер → classmethod'ы
+  `Logger` (`resolve` / `current` + protected `_set_resolver` + ClassVar
+  `_resolver`); `step` теперь класс (lowercase - декоратор/CM, как `property`),
+  а не функция-фабрика над приватным `_LazyStep`.
+
+### Устарело
+
+- **`set_logger_resolver`** — no-op-заглушка совместимости (`@deprecated`).
+  Разрешение активного Logger взял на себя DI-контейнер (`CoreServicesABC`
+  регистрирует себя сам); ручной вызов больше не нужен.
+
 ## [0.2.2] - 2026-07-10
 
 ### Добавлено
