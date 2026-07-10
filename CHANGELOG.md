@@ -3,6 +3,29 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.2.2] - 2026-07-10
+
+### Добавлено
+
+- **Highlight элементов в ядре.** `JsElementActions.apply_highlight()` /
+  `clear_highlights()` и scoped `highlight()` (context manager) - подсветка
+  живёт в ядре и переиспользуется платформенными пакетами. `apply_highlight`
+  ставит `outline` через `!important` (переживает `!important`-стили сайта, не
+  влияет на layout) и метит элемент маркером `data-tq-highlight`; снятие идёт
+  document-wide по маркеру, поэтому переживает навигацию/перерендер (устаревший
+  элемент просто не находится), а прежний inline-`outline` восстанавливается.
+  Добавлены `JSActions.clear_highlights()` (page-scope) и
+  `BaseJSActions.execute_global_script()` (запуск page/document-scope скрипта
+  без неявного prefix-элемента).
+
+### Изменено
+
+- **`JsElementActions.highlight` - теперь scoped context manager.** Вместо
+  одноразового `highlight(border)`, красившего `border` инлайном, - обёртка
+  над `apply_highlight`/`clear_highlights`: подсветка снимается по выходе из
+  контекста. JS-ассеты `element/apply_highlight.js` и
+  `document/clear_highlights.js`; удалён `element/border_element.js`.
+
 ## [0.2.1] - 2026-07-09
 
 ### Исправлено
