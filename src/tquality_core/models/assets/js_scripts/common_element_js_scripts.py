@@ -7,8 +7,8 @@ from tquality_core import PathUtils
 class CommonElementJSScripts:
     __JS_DIR = PathUtils.get_js_scripts_dir() / "element"
 
+    APPLY_HIGHLIGHT = __JS_DIR / "apply_highlight.js"
     BLUR = __JS_DIR / "blur.js"
-    BORDER_ELEMENT = __JS_DIR / "border_element.js"
     ELEMENT_CLICK = __JS_DIR / "element_click.js"
     ELEMENT_IS_ON_SCREEN = __JS_DIR / "element_is_on_screen.js"
     EXPAND_SHADOW_ROOT = __JS_DIR / "expand_shadow_root.js"

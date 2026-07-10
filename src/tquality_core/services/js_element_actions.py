@@ -1,9 +1,11 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any, Literal, override
 
 from tquality_core.models.assets.js_scripts.common_element_js_scripts import (
     CommonElementJSScripts,
 )
+from tquality_core.models.assets.js_scripts.common_js_scripts import CommonJSScripts
 from tquality_core.services.base_js_actions import BaseJSActions
 
 
@@ -40,9 +42,30 @@ class JsElementActions(BaseJSActions):
         """Снять фокус: эмитит `blur` на элементе и зовёт `blur()` у активного."""
         self.execute_script(CommonElementJSScripts.BLUR)
 
-    def highlight(self, border: str = "3px solid red") -> None:
-        """Подсветить элемент CSS-рамкой (по умолчанию красной)."""
-        self.execute_script(CommonElementJSScripts.BORDER_ELEMENT, border)
+    def apply_highlight(self, outline: str = "3px solid red") -> None:
+        """Обвести элемент `outline`-рамкой через `!important` (чтобы стили
+        сайта её не переопределяли) и пометить маркером `data-tq-highlight`.
+        Прежний inline-`outline` сохраняется - `clear_highlights` его вернёт.
+        Рамку НЕ снимает: одиночный вызов «залипает» до следующего
+        `clear_highlights`; для scoped-подсветки есть `highlight`."""
+        self.execute_script(CommonElementJSScripts.APPLY_HIGHLIGHT, outline)
+
+    def clear_highlights(self) -> None:
+        """Снять подсветку со ВСЕХ помеченных элементов и вернуть им прежний
+        `outline`. Идёт document-wide по маркеру `data-tq-highlight`, а не по
+        конкретной ссылке, поэтому переживает навигацию/перерендер: устаревший
+        элемент просто не находится."""
+        self.execute_global_script(CommonJSScripts.CLEAR_HIGHLIGHTS)
+
+    @contextmanager
+    def highlight(self, outline: str = "3px solid red") -> Iterator[None]:
+        """Подсветить элемент на время контекста (scoped): по выходе рамка
+        снимается. Обёртка над `apply_highlight`/`clear_highlights`."""
+        self.apply_highlight(outline)
+        try:
+            yield
+        finally:
+            self.clear_highlights()
 
     # ── ввод / атрибуты ──────────────────────────────────────────────────────
     def set_value(self, value: str) -> None:

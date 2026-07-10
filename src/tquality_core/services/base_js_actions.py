@@ -39,3 +39,9 @@ class BaseJSActions:
         return self._async_execute_js(
             self._to_source(script), *self._prefix_args(), *args,
         )
+
+    def execute_global_script(self, script: Script, *args: Any) -> Any:
+        """Как `execute_script`, но без неявных prefix-аргументов подкласса -
+        для page/document-scope скриптов, которым текущий элемент не нужен
+        (например, снятие подсветки идёт по всему документу, а не по элементу)."""
+        return self._execute_js(self._to_source(script), *args)

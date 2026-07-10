@@ -38,6 +38,13 @@ class JSActions(BaseJSActions):
         """Подменить `confirm`/`alert`/`prompt`, чтобы они авто-подтверждались."""
         self.execute_script(CommonJSScripts.AUTO_ACCEPT_ALERTS)
 
+    def clear_highlights(self) -> None:
+        """Снять подсветку со ВСЕХ помеченных элементов (document-wide по
+        маркеру `data-tq-highlight`) и вернуть им прежний `outline`. Парная к
+        `JsElementActions.apply_highlight`: подсветка ставится на элемент, а
+        снимается по всему документу - переживает навигацию/перерендер."""
+        self.execute_script(CommonJSScripts.CLEAR_HIGHLIGHTS)
+
     def is_page_loaded(self) -> bool:
         return bool(self.execute_script(CommonJSScripts.IS_PAGE_LOADED))
 
