@@ -11,7 +11,6 @@ import enum
 import functools
 import hashlib
 import logging
-import os
 import re
 import sys
 from collections.abc import Callable
@@ -21,6 +20,7 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 import allure
+from static_dependency_injector.testing import TestContext
 from typing_extensions import deprecated
 
 from tquality_core.models.config import LoggingConfig, LogLevelName, LogStream
@@ -465,14 +465,17 @@ class Logger:
 
     @staticmethod
     def _test_node_id() -> str:
-        """Сформировать безопасное для файловой системы имя из pytest node ID.
+        """Сформировать безопасное для файловой системы имя из ID активного теста.
 
+        Источник - `TestContext.current.id` (pytest nodeid / unittest id) из
+        static-di: фреймворк-нейтрально, без чтения `PYTEST_CURRENT_TEST` из
+        окружения и без обрезки суффикса фазы (` (setup)` и т.п.) - в nodeid его
+        нет. Вне теста (`TestContext.is_active()` == False) возвращает `unknown`.
         ASCII-only, с MD5-хэшем для уникальности при не-ASCII параметрах.
         """
-        current = os.environ.get("PYTEST_CURRENT_TEST", "")
-        if not current:
+        if not TestContext.is_active():
             return "unknown"
-        node_id = re.sub(r"\s+\(.*\)$", "", current)
+        node_id = TestContext.current.id
         ascii_part = re.sub(r"[^a-zA-Z0-9_\-]", "_", node_id)
         ascii_part = re.sub(r"_+", "_", ascii_part).strip("_")
         node_hash = hashlib.md5(node_id.encode()).hexdigest()[:8]
@@ -496,8 +499,8 @@ class step:  # noqa: N801 - lowercase: используется как деко�
     Критично при использовании декоратором на тестовом методе: декоратор
     применяется на импорте, когда активного теста (и его `Logger`) ещё нет.
     Раннее разрешение построило бы `Logger` на импорте - с неверным именем
-    (`unknown`, т.к. `PYTEST_CURRENT_TEST` ещё не выставлен) и не тем
-    экземпляром. Ленивое разрешение откладывает создание `Step` и `Logger` до
+    (`unknown`, т.к. активного теста ещё нет - `TestContext.is_active()` False) и
+    не тем экземпляром. Ленивое разрешение откладывает создание `Step` и `Logger` до
     прогона теста.
 
     Здесь же живёт РЕЕСТР активного Logger (`resolve`/`current` + protected

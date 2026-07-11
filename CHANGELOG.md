@@ -3,6 +3,28 @@
 Формат по [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), версии по
 [семантическому версионированию](https://semver.org/lang/ru/).
 
+## [0.2.4] - 2026-07-11
+
+### Добавлено
+
+- **Слот `test` в `CoreServices`** — провайдер `CurrentTest()` из
+  `static_dependency_injector.testing` (static-di 0.3.8). Резолвит `TestInfo`
+  активного теста (`id`, `name`, `module`, `cls`, `params`, `markers`) на каждый
+  доступ, фреймворк-нейтрально (pytest - авто через бандл-плагин, unittest - через
+  `TestContext.scope`). Сервисы могут зависеть от него через `CurrentTest()` /
+  `Delegate(test)`, не читая `PYTEST_CURRENT_TEST` из окружения; вне теста доступ
+  бросает `NoActiveTestError`. `TestContext` и `TestInfo` реэкспортированы из
+  `tquality_core.di`.
+
+### Изменено
+
+- **`Logger._test_node_id` берёт ID теста из `TestContext.current`**, а не из
+  `os.environ["PYTEST_CURRENT_TEST"]`. Фреймворк-нейтрально (pytest + unittest),
+  без парсинга суффикса фазы (` (setup)`); вне теста по-прежнему `unknown`
+  (через `TestContext.is_active()`). `import os` из `services/logger.py` убран.
+- **Нижняя граница `static-dependency-injector` поднята до `>=0.3.8`** (нужен
+  `testing.TestContext` / `CurrentTest`).
+
 ## [0.2.3] - 2026-07-10
 
 ### Добавлено

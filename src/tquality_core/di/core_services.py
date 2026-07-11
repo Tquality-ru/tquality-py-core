@@ -9,6 +9,9 @@ provider, фабрики элементов, driver-waiter), переопред�
 Скоупы:
 - `config` — `Singleton`: одна конфигурация на контейнер (платформа
   переопределяет тип и/или пересобирает per-test через `set_overrides`).
+- `test` — `CurrentTest()` (0.3.8 static-di): резолвит `TestInfo` активного теста
+  на каждый доступ (не кешируется), поэтому сам подхватывает смену теста. Вне
+  теста бросает `NoActiveTestError`.
 - `logger` — testlocal (`TestContextSingleton`): свежий per-test экземпляр,
   сбрасывается бандл-плагином `static_dependency_injector` после каждого теста.
 - `waiter` — `ContextLocalSingleton`: `logger_resolver=Delegate(logger)`
@@ -30,6 +33,7 @@ provider, фабрики элементов, driver-waiter), переопред�
 from __future__ import annotations
 
 from static_dependency_injector.static_providers import ContextLocalSingleton, Delegate, Singleton, TestContextSingleton
+from static_dependency_injector.testing import CurrentTest, TestInfo
 
 from tquality_core import BaseConfig, Logger, Waiter
 from tquality_core.di.core_services_abc import CoreServicesABC
@@ -46,5 +50,13 @@ class CoreServices(CoreServicesABC):
     """
 
     config: BaseConfig = Singleton(BaseConfig)
+    #: Метаданные активного теста (`id`, `name`, `module`, `cls`, `params`,
+    #: `markers`) из `static_dependency_injector.testing.TestContext`. `CurrentTest`
+    #: резолвит `TestContext.current` на каждый доступ - фреймворк-нейтральный
+    #: источник «какой тест идёт» (pytest - авто, unittest - через `scope`), вместо
+    #: чтения `PYTEST_CURRENT_TEST` из окружения. Вне теста бросает
+    #: `NoActiveTestError` - оборачивайте `Delegate(test)` там, где нужна лениво
+    #: резолвящаяся зависимость.
+    test: TestInfo = CurrentTest()
     logger: Logger = TestContextSingleton(Logger, config=config)
     waiter: Waiter = ContextLocalSingleton(Waiter, config=config, logger_resolver=Delegate(logger))
